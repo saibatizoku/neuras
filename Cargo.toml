@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Joaquín R <globojorro@gmail.com>"]
 
 [dependencies]
+zmq = "0.8"
