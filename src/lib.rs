@@ -17,6 +17,10 @@ pub fn create_context() -> zmq::Context {
     zmq::Context::new()
 }
 
+pub fn create_message() -> Result<zmq::Message> {
+    zmq::Message::new().chain_err(|| ErrorKind::Neurotic)
+}
+
 pub fn subscribe_client(subscriber: &zmq::Socket, channel: &str) -> Result<()> {
     subscriber.set_subscribe(channel.as_bytes()).chain_err(|| ErrorKind::Neurotic)
 }
