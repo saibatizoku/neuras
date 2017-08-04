@@ -13,6 +13,10 @@ use url::Url;
 
 use errors::*;
 
+pub fn create_context() -> zmq::Context {
+    zmq::Context::new()
+}
+
 pub fn subscribe_client(subscriber: &zmq::Socket, channel: &str) -> Result<()> {
     subscriber.set_subscribe(channel.as_bytes()).chain_err(|| ErrorKind::Neurotic)
 }
