@@ -13,6 +13,10 @@ use url::Url;
 
 use errors::*;
 
+pub fn subscribe_client(subscriber: &zmq::Socket, channel: &str) -> Result<()> {
+    subscriber.set_subscribe(channel.as_bytes()).chain_err(|| ErrorKind::Neurotic)
+}
+
 pub fn zmq_xpub_xsub_proxy(context: &zmq::Context, xpub: &str, xsub: &str) -> Result<()> {
     let mut backend = zmq_xpub(context)?;
     let mut frontend = zmq_xsub(context)?;
