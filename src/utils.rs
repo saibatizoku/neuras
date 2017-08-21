@@ -1,3 +1,4 @@
+//! Functions for easy handling of ZMQ sockets, services, and enpoints.
 use std::str::FromStr;
 
 use url::Url;
@@ -5,60 +6,74 @@ use zmq;
 
 use errors::*;
 
+/// Create a ZMQ Context.
 pub fn create_context() -> zmq::Context {
     zmq::Context::new()
 }
 
+/// Create a ZMQ Message.
 pub fn create_message() -> Result<zmq::Message> {
     zmq::Message::new().chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Subscribe a client to a PUB socket.
 pub fn subscribe_client(subscriber: &zmq::Socket, channel: &str) -> Result<()> {
-    subscriber.set_subscribe(channel.as_bytes()).chain_err(|| ErrorKind::Neurotic)
+    subscriber
+        .set_subscribe(channel.as_bytes())
+        .chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Proxy for XPUB/XSUB services.
 pub fn zmq_xpub_xsub_proxy(context: &zmq::Context, xpub: &str, xsub: &str) -> Result<()> {
     let mut backend = zmq_xpub(context)?;
     let mut frontend = zmq_xsub(context)?;
 
-    let _bind = bind_server(&backend, xsub)?;
-    let _connect = connect_client(&frontend, xpub)?;
+    let _bind = bind_socket(&backend, xsub)?;
+    let _connect = connect_socket(&frontend, xpub)?;
 
     zmq::proxy(&mut frontend, &mut backend).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as XPUB.
 pub fn zmq_xpub(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::XPUB).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as XSUB.
 pub fn zmq_xsub(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::XSUB).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as PUB.
 pub fn zmq_pub(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::PUB).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as SUB.
 pub fn zmq_sub(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::SUB).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as REP.
 pub fn zmq_rep(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::REP).chain_err(|| ErrorKind::Neurotic)
 }
 
+/// Returns a ZMQ Socket configured as REQ.
 pub fn zmq_req(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::REQ).chain_err(|| ErrorKind::Neurotic)
 }
 
-pub fn bind_server(server: &zmq::Socket, addr: &str) -> Result<()> {
+/// Returns a ZMQ Socket bound to the specified address.
+pub fn bind_socket(server: &zmq::Socket, addr: &str) -> Result<()> {
     let addr_url: Url = addr.parse().chain_err(|| ErrorKind::AddressParse)?;
     server
         .bind(addr_url.as_str())
         .chain_err(|| ErrorKind::Neurotic)
 }
 
-pub fn connect_client(client: &zmq::Socket, addr: &str) -> Result<()> {
+/// Returns a ZMQ Socket connected to the specified address.
+pub fn connect_socket(client: &zmq::Socket, addr: &str) -> Result<()> {
     match Url::from_str(addr) {
         Ok(_) => client.connect(addr).chain_err(|| ErrorKind::Neurotic),
         Err(_) => Err(ErrorKind::AddressParse.into()),
