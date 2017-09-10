@@ -7,8 +7,6 @@ extern crate zmq;
 
 /// Error handling.
 pub mod errors;
-/// Node entities for networking.
-pub mod node;
 /// Usueful utilities to deal with ZMQ.
 pub mod utils;
 
