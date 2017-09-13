@@ -53,7 +53,6 @@ pub fn zmq_pub(context: &zmq::Context) -> Result<zmq::Socket> {
 pub fn zmq_sub(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::SUB).chain_err(|| ErrorKind::Neurotic)
 }
-
 /// Returns a ZMQ Socket configured as REP.
 pub fn zmq_rep(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::REP).chain_err(|| ErrorKind::Neurotic)
@@ -62,6 +61,21 @@ pub fn zmq_rep(context: &zmq::Context) -> Result<zmq::Socket> {
 /// Returns a ZMQ Socket configured as REQ.
 pub fn zmq_req(context: &zmq::Context) -> Result<zmq::Socket> {
     context.socket(zmq::REQ).chain_err(|| ErrorKind::Neurotic)
+}
+
+/// Returns a ZMQ Socket configured as PAIR.
+pub fn zmq_pair(context: &zmq::Context) -> Result<zmq::Socket> {
+    context.socket(zmq::PAIR).chain_err(|| ErrorKind::Neurotic)
+}
+
+/// Returns a ZMQ Socket configured as PULL.
+pub fn zmq_pull(context: &zmq::Context) -> Result<zmq::Socket> {
+    context.socket(zmq::PULL).chain_err(|| ErrorKind::Neurotic)
+}
+
+/// Returns a ZMQ Socket configured as PUSH.
+pub fn zmq_push(context: &zmq::Context) -> Result<zmq::Socket> {
+    context.socket(zmq::PUSH).chain_err(|| ErrorKind::Neurotic)
 }
 
 /// Returns a ZMQ Socket bound to the specified address.
