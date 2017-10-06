@@ -2,7 +2,7 @@
 
 #[macro_use]
 extern crate error_chain;
-extern crate url;
+pub extern crate url;
 pub extern crate zmq;
 
 /// Error handling.
