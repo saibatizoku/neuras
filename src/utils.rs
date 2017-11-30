@@ -13,7 +13,7 @@ pub fn create_context() -> zmq::Context {
 
 /// Create a ZMQ Message.
 pub fn create_message() -> Result<zmq::Message> {
-    zmq::Message::new().chain_err(|| ErrorKind::Neurotic)
+    Ok(zmq::Message::new())
 }
 
 /// Subscribe a client to a PUB socket.
