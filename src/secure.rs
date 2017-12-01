@@ -150,8 +150,8 @@ impl CipherSender {
     }
 
     /// Connect the sender to `self.endpoint`, configuring the socket with
-    /// the server public_key, and setting `public_key`/`secret_key`
-    /// from `self.keys`.
+    /// the `server_key`, which is the public server key, and setting
+    /// `public_key`/`secret_key` from `self.keys`.
     pub fn connect(&self, server_key: &[u8]) -> Result<()> {
         self.socket.set_curve_serverkey(server_key)?;
 

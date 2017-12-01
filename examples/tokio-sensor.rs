@@ -1,16 +1,10 @@
-// Modeled after tests/udp.rs from tokio-core.
+// Modeled after tests/smoke.rs from zmq-mio, which is modeled after
+// tests/udp.rs from tokio-core.
 //
-// Note that this example is somewhat ridiculously using zmq to
-// exchange messages between parts of the program which run in a
-// single thread. It is not totally clear from the docs that this
-// should work, but it seems to.
+// This example is mostly to show how to create a REQ-REP service
+// using ZMQ sockets as the underlying transport.
 //
-// Let's hope this is working due to zmq's inherent architecture, and
-// not by chance. The intuition of why this should work reliably is
-// that assuming there is buffer space for at least one message in an
-// zmq socket, an initial send() can be done, and everything else
-// chains upon that event.
-
+// It is mostly a proof-of-concept exercise.
 extern crate futures;
 extern crate tokio_core;
 extern crate zmq;
@@ -19,8 +13,8 @@ extern crate zmq_tokio;
 use std::io;
 
 use futures::{stream, Future, Sink, Stream};
-use zmq_tokio::{Context, Socket};
 use tokio_core::reactor::Core;
+use zmq_tokio::Socket;
 
 macro_rules! t {
     ($e:expr) => (match $e {
@@ -82,20 +76,49 @@ fn stream_client(
 }
 
 fn main() {
+    // Tokio reactor core that will run our application.
     let mut l = Core::new().unwrap();
+    // Get a handle to the reactor.
     let handle = l.handle();
 
-    let ctx = Context::new();
-    let mut rep = t!(ctx.socket(zmq::REP, &handle));
-    t!(rep.bind(SOCKET_ADDRESS));
+    // `zmq::Context` to be shared by other `zmq::Socket` connections.
+    // The context IS thread-safe.
+    //
+    // `zmq::Socket` IS NOT thread-safe, and must be instantiated within
+    // the thread where it will exist.
+    let ctx = zmq::Context::new();
+
+    // Receiver setup
+    // --------------
+    // Create a `zmq::Socket` with the `zmq::REP` socket-type.
+    // The socket can be configured as usual before converting it into
+    // a `zmq_tokio::Socket`.
+    let zmq_rep_socket = t!(ctx.socket(zmq::REP));
+
+    // Create a `zmq_tokio::Socket` from the `zmq::Socket` and the
+    // reactor handle.
+    let mut rep = t!(Socket::new(zmq_rep_socket, &handle));
+
+    // Bind the `zmq_tokio::Socket` to the given endpoint.
+    let _bind = t!(rep.bind(SOCKET_ADDRESS));
 
     let client = std::thread::spawn(move || {
         let mut l = Core::new().unwrap();
         let handle = l.handle();
 
-        let ctx = Context::new();
-        let mut req = t!(ctx.socket(zmq::REQ, &handle));
-        t!(req.connect(SOCKET_ADDRESS));
+        // Sender setup
+        // --------------
+        // Create a `zmq::Socket` with the `zmq::REQ` socket-type.
+        // The socket can be configured as usual before converting it into
+        // a `zmq_tokio::Socket`.
+        let req_socket = t!(ctx.socket(zmq::REQ));
+
+        // Create a `mut zmq_tokio::Socket` from the `zmq::Socket` and the
+        // reactor handle.
+        let mut req = t!(Socket::new(req_socket, &handle));
+
+        // Connect the `zmq_tokio::Socket` to the given endpoint.
+        let _connect = t!(req.connect(SOCKET_ADDRESS));
 
         let client = stream_client(req, 10);
         l.run(client).unwrap();
