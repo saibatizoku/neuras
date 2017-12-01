@@ -12,13 +12,22 @@ fn create_socket_pair(
     endpoint: &str,
     context: Option<Context>,
 ) -> Result<(CipherSender, CipherReceiver)> {
+    // Builder to create cipher sockets. Takes `Option<zmq::Context>` as the
+    // only argument.
     let socket_builder = CipherSocketBuilder::new(context)?;
 
+    // Bind the receiver socket to the endpoint
+    println!("binding server to {:?}", &endpoint);
     let receiver = socket_builder.receiver(zmq::PAIR, endpoint)?;
     let _bind = receiver.bind()?;
 
+    // Get the last endpoint the receiver was bound to. ZMQ sockets can be
+    // bound to multiple endpoints, such as `tcp://127.0.0.1:*` which are
+    // dynamically assigned from free ports. Calling `get_last_endpoint` is
+    // needed to specify the exact endpoint for the senders to connect to.
     let ep = receiver.get_last_endpoint()?;
 
+    // Connect the sender socket to the endpoint
     println!("connecting client to {:?}", &ep);
     let sender = socket_builder.sender(zmq::PAIR, &ep)?;
     let _connect = sender.connect(&receiver.public_key())?;
