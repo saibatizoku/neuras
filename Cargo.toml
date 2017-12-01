@@ -12,7 +12,7 @@ tokio-proto = "0.1"
 tokio-service = "0.1"
 url = "1.5.1"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
-zmq-tokio = { git = "https://github.com/rotty/zmq-tokio.git" }
+zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git" }
 
 [profile.release]
 lto = true
