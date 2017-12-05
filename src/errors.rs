@@ -1,5 +1,8 @@
 use std::io;
+
 use zmq;
+
+use super::secure;
 
 error_chain! {
     errors {
@@ -12,6 +15,9 @@ error_chain! {
         Neurotic {
             description ("our network has gone neurotic")
         }
+    }
+    links {
+        Secure(secure::errors::Error, secure::errors::ErrorKind);
     }
     foreign_links {
         Io(io::Error);
