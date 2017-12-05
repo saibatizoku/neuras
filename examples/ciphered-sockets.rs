@@ -1,3 +1,10 @@
+//! This example uses `CipherSocketBuilder` to create a `CipherReceiver`, and a
+//! `CipherSender`. These are ZMQ sockets that act as server-client through a
+//! given endpoint.
+//!
+//! These are useful for inter-connecting sockets securely using `ipc://`,
+//! `tcp://`, or `udp://`. The `inproc://` scheme can only be used for sockets
+//! that share the same ZMQ context.
 #[macro_use]
 extern crate error_chain;
 extern crate neuras;
@@ -7,8 +14,8 @@ use neuras::secure::{CipherReceiver, CipherSender, CipherSocketBuilder};
 use neuras::secure::errors::*;
 use zmq::{Context, Message};
 
-// Utility for creating `PAIR` sockets with a common endpoint
-fn create_socket_pair(
+// Utility for creating `PAIR` sockets with a common endpoint pre-configured.
+fn create_cipher_pair(
     endpoint: &str,
     context: Option<Context>,
 ) -> Result<(CipherSender, CipherReceiver)> {
@@ -60,7 +67,7 @@ fn run_code() -> Result<()> {
     // Build the sender and the receiver, each on a separate thread, sharing the
     // same zmq::Context, and thus enabling the possibility for inter-process
     // communication.
-    let (sender, receiver) = create_socket_pair(endpoint, Some(net_ctx))?;
+    let (sender, receiver) = create_cipher_pair(endpoint, Some(net_ctx))?;
 
     // The typical REQ-REP pattern is as follows:
     //
