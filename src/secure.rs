@@ -50,6 +50,24 @@ pub mod errors {
 
 use self::errors::*;
 
+/// Secures a ZMQ socket as a server for, according to the
+/// [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE) specification.
+pub fn secure_server_socket(socket: &Socket, keys: &CurveKeyPair) -> Result<()> {
+    socket.set_curve_server(true)?;
+    socket.set_curve_publickey(&keys.public_key)?;
+    socket.set_curve_secretkey(&keys.secret_key)?;
+    Ok(())
+}
+
+/// Configures a socket that connects securely to a ZMQ server, according to the
+/// [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE) specification.
+pub fn secure_client_socket(socket: &Socket, server_key: &[u8], keys: &CurveKeyPair) -> Result<()> {
+    socket.set_curve_serverkey(server_key)?;
+    socket.set_curve_publickey(&keys.public_key)?;
+    socket.set_curve_secretkey(&keys.secret_key)?;
+    Ok(())
+}
+
 /// A socket that receives incoming messages from a ciphered connection.
 pub struct CipherReceiver {
     endpoint: String,
@@ -74,9 +92,7 @@ impl CipherReceiver {
     /// `set_curve_server(true)`, and setting `public_key`/`secret_key`
     /// from `self.keys`.
     pub fn bind(&self) -> Result<()> {
-        self.socket.set_curve_server(true)?;
-        self.socket.set_curve_publickey(&self.keys.public_key)?;
-        self.socket.set_curve_secretkey(&self.keys.secret_key)?;
+        let _cipher = secure_server_socket(&self.socket, &self.keys)?;
         self.socket
             .bind(&self.endpoint)
             .chain_err(|| ErrorKind::ReceiverBind)
@@ -153,10 +169,7 @@ impl CipherSender {
     /// the `server_key`, which is the public server key, and setting
     /// `public_key`/`secret_key` from `self.keys`.
     pub fn connect(&self, server_key: &[u8]) -> Result<()> {
-        self.socket.set_curve_serverkey(server_key)?;
-
-        self.socket.set_curve_publickey(&self.keys.public_key)?;
-        self.socket.set_curve_secretkey(&self.keys.secret_key)?;
+        let _cipher = secure_client_socket(&self.socket, server_key, &self.keys)?;
         self.socket
             .connect(&self.endpoint)
             .chain_err(|| ErrorKind::SenderConnect)
@@ -226,5 +239,65 @@ impl CipherSocketBuilder {
         let keys = CurveKeyPair::new()?;
         // receiver socket acts as server, will accept connections
         CipherReceiver::new(receiver, endpoint, keys).chain_err(|| ErrorKind::SetupReceiver)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use zmq;
+
+    fn setup_socket_n_keys(
+        t: zmq::SocketType,
+        c: Option<zmq::Context>,
+    ) -> (zmq::Socket, zmq::CurveKeyPair) {
+        let ctx = match c {
+            Some(ct) => ct,
+            None => zmq::Context::new(),
+        };
+        (ctx.socket(t).unwrap(), zmq::CurveKeyPair::new().unwrap())
+    }
+
+    #[test]
+    fn secure_socket_as_a_server() {
+        let (server, keys) = setup_socket_n_keys(zmq::PAIR, None);
+
+        // test function
+        let _secure = secure_server_socket(&server, &keys);
+
+        // test that zmq socket configuration is as expected
+        assert_eq!(server.is_curve_server().unwrap(), true);
+        assert_eq!(
+            &keys.secret_key,
+            server.get_curve_secretkey().unwrap().as_slice()
+        );
+        assert_eq!(
+            &keys.public_key,
+            server.get_curve_publickey().unwrap().as_slice()
+        );
+    }
+
+    #[test]
+    fn secure_socket_as_a_client() {
+        let (client, keys) = setup_socket_n_keys(zmq::PAIR, None);
+        let server_key = zmq::CurveKeyPair::new().unwrap().public_key;
+
+        // test function
+        let _secure = secure_client_socket(&client, &server_key, &keys);
+
+        // test that zmq socket configuration is as expected
+        assert_eq!(client.is_curve_server().unwrap(), false);
+        assert_eq!(
+            &keys.secret_key,
+            client.get_curve_secretkey().unwrap().as_slice()
+        );
+        assert_eq!(
+            &keys.public_key,
+            client.get_curve_publickey().unwrap().as_slice()
+        );
+        assert_eq!(
+            &server_key,
+            client.get_curve_serverkey().unwrap().as_slice()
+        );
     }
 }
