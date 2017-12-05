@@ -6,12 +6,14 @@
 //
 // It is mostly a proof-of-concept exercise.
 extern crate futures;
+extern crate neuras;
 extern crate tokio_core;
 extern crate zmq;
 extern crate zmq_tokio;
 
 use std::io;
 
+use neuras::secure::{secure_client_socket, secure_server_socket};
 use futures::{stream, Future, Sink, Stream};
 use tokio_core::reactor::Core;
 use zmq_tokio::Socket;
@@ -94,6 +96,8 @@ fn main() {
     // The socket can be configured as usual before converting it into
     // a `zmq_tokio::Socket`.
     let zmq_rep_socket = t!(ctx.socket(zmq::REP));
+    let server_keys = zmq::CurveKeyPair::new().unwrap();
+    let _chiper = secure_server_socket(&zmq_rep_socket, &server_keys).unwrap();
 
     // Create a `zmq_tokio::Socket` from the `zmq::Socket` and the
     // reactor handle.
@@ -112,6 +116,9 @@ fn main() {
         // The socket can be configured as usual before converting it into
         // a `zmq_tokio::Socket`.
         let req_socket = t!(ctx.socket(zmq::REQ));
+        let client_keys = zmq::CurveKeyPair::new().unwrap();
+        let _chiper =
+            secure_client_socket(&req_socket, &server_keys.public_key, &client_keys).unwrap();
 
         // Create a `mut zmq_tokio::Socket` from the `zmq::Socket` and the
         // reactor handle.
