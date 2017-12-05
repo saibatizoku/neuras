@@ -1,6 +1,12 @@
+//! Network sockets and tools for authentication, and encryption protocol for ZeroMQ.
+//!
+//! The underlying code uses an implementation of
+//! [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE),
+//! by way of the [rust-zmq](https://github.com/erickt/rust-zmq) crate.
 use zmq::{Context, CurveKeyPair, Message, Sendable, Socket, SocketType};
 
 pub mod errors {
+    //! Errors for secure-socket communications.
     use zmq;
 
     error_chain! {
@@ -50,7 +56,7 @@ pub mod errors {
 
 use self::errors::*;
 
-/// Secures a ZMQ socket as a server for, according to the
+/// Secures a ZMQ socket as a server, according to the
 /// [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE) specification.
 pub fn secure_server_socket(socket: &Socket, keys: &CurveKeyPair) -> Result<()> {
     socket.set_curve_server(true)?;
@@ -261,7 +267,6 @@ mod tests {
     #[test]
     fn secure_socket_as_a_server() {
         let (server, keys) = setup_socket_n_keys(zmq::PAIR, None);
-
         // test function
         let _secure = secure_server_socket(&server, &keys);
 
@@ -281,7 +286,6 @@ mod tests {
     fn secure_socket_as_a_client() {
         let (client, keys) = setup_socket_n_keys(zmq::PAIR, None);
         let server_key = zmq::CurveKeyPair::new().unwrap().public_key;
-
         // test function
         let _secure = secure_client_socket(&client, &server_key, &keys);
 
