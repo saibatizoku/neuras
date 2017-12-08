@@ -21,3 +21,35 @@ pub mod errors;
 pub mod secure;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use zmq;
+
+    #[test]
+    fn socket_flags_default_to_empty_bitmask() {
+        let flags: SocketFlags = Default::default();
+        assert!(flags.is_empty());
+        assert_eq!(flags.bits(), 0);
+    }
+
+    #[test]
+    fn socket_flags_async_is_zmq_dontwait() {
+        let flag = SocketFlags::ASYNC;
+        assert_eq!(flag.bits(), zmq::DONTWAIT);
+    }
+
+    #[test]
+    fn socket_flags_multipart_is_zmq_sndmore() {
+        let flag = SocketFlags::MULTIPART;
+        assert_eq!(flag.bits(), zmq::SNDMORE);
+    }
+
+    #[test]
+    fn socket_flags_async_multipart_is_zmq_sndmore() {
+        let flags = SocketFlags::ASYNC_MULTIPART;
+        assert_eq!(flags.bits(), zmq::DONTWAIT | zmq::SNDMORE);
+    }
+}
