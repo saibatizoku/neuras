@@ -8,6 +8,8 @@
 #![recursion_limit = "1024"]
 
 #[macro_use]
+extern crate bitflags;
+#[macro_use]
 extern crate error_chain;
 pub extern crate futures;
 pub extern crate tokio_core;
@@ -22,6 +24,20 @@ pub mod secure;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
 
+bitflags! {
+    /// Typesafe flags for sending/receiving `zmq::Message` on a `zmq::Socket`.
+    ///
+    /// `SocketFlags::ASYNC` is exactly the same as `ZMQ_DONTWAIT`
+    /// `SocketFlags::MULTIPART` is exactly the same as `ZMQ_SNDMORE`
+    ///
+    /// Default value with bits: `0`
+    #[derive(Default)]
+    pub struct SocketFlags: i32 {
+        const ASYNC = 1;
+        const MULTIPART = 2;
+        const ASYNC_MULTIPART = Self::ASYNC.bits | Self::MULTIPART.bits;
+    }
+}
 
 #[cfg(test)]
 mod tests {
