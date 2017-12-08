@@ -26,3 +26,12 @@ Neuras funciona con [benita](https://github.com/saibatizoku/benita).
     ```
 
     En caso de necesitar especificar algún otro directorio, `./configure --help` tiene el listado completo de posibles directorios configurables.
+
+## Feature Wish List
+
+- [ ] Automatic handling of sockets
+- [ ] Portable thread management
+- [ ] Piping from parent to child threads
+- [ ] Portable clocks
+- [ ] A reactor to replace `zmq_poll()`
+- [ ] Proper handling of `Ctrl-C`
