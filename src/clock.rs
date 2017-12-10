@@ -33,9 +33,8 @@
 //! let delta = clock.usecs() - start;
 //! assert!(delta >= 2_000); //results can only be approximated at this resolution.
 //!
-//! // Return formatted date/time string.
+//! // Return formatted RFC 3339 UTC date/time string.
 //! let time_str: String = clock.time_str().unwrap();
-//! //assert_eq!(time_str, "000");
 //! ```
 pub mod errors {
     //! Clock errors.
@@ -58,7 +57,7 @@ use self::errors::*;
 
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 
 // Convert `std::time::Duration` to microseconds.
@@ -128,11 +127,12 @@ impl Clock {
     pub fn time_str(&self) -> Result<String> {
         let timestamp = get_system_time()
             .chain_err(|| ErrorKind::ClockSystemDateTime)?;
-        let dt = NaiveDateTime::from_timestamp(
+        let ndt = NaiveDateTime::from_timestamp(
             timestamp.as_secs() as i64,
             timestamp.subsec_nanos() as u32,
         );
-        let dt_str = dt.format("%+").to_string();
+        let dt = DateTime::<Utc>::from_utc(ndt, Utc);
+        let dt_str = dt.to_rfc3339();
         Ok(dt_str)
     }
 }
@@ -158,6 +158,14 @@ mod tests {
         let now = clock.time().unwrap() / 1_000;
         let dt = NaiveDateTime::from_timestamp(now as i64, 0);
         assert_eq!(dt.timestamp(), now);
+    }
+
+    #[test]
+    fn clock_time_str_is_a_valid_rfc_3339_string() {
+        let clock = Clock::new();
+        let now = clock.time_str().unwrap();
+        let dt = DateTime::parse_from_rfc3339(&now);
+        assert!(dt.is_ok());
     }
 
     #[test]
