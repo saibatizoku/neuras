@@ -32,6 +32,6 @@ Neuras funciona con [benita](https://github.com/saibatizoku/benita).
 - [ ] Automatic handling of sockets
 - [ ] Portable thread management
 - [ ] Piping from parent to child threads
-- [ ] Portable clocks
+- [X] Portable clocks
 - [ ] A reactor to replace `zmq_poll()`
 - [ ] Proper handling of `Ctrl-C`

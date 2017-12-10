@@ -9,6 +9,7 @@
 
 #[macro_use]
 extern crate bitflags;
+extern crate chrono;
 #[macro_use]
 extern crate error_chain;
 pub extern crate futures;
@@ -17,6 +18,8 @@ pub extern crate url;
 pub extern crate zmq;
 pub extern crate zmq_tokio;
 
+// Millisecond clocks and delays.
+pub mod clock;
 /// Error handling.
 pub mod errors;
 // Secure-socket communications.
