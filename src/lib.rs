@@ -24,6 +24,8 @@ pub mod clock;
 pub mod errors;
 // Security for socket communications.
 pub mod security;
+// Sockets for networking.
+pub mod socket;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
 
