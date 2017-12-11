@@ -22,8 +22,8 @@ pub extern crate zmq_tokio;
 pub mod clock;
 /// Error handling.
 pub mod errors;
-// Secure-socket communications.
-pub mod secure;
+// Security for socket communications.
+pub mod security;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
 

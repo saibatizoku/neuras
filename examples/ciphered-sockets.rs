@@ -10,8 +10,8 @@ extern crate error_chain;
 extern crate neuras;
 extern crate zmq;
 
-use neuras::secure::{CipherReceiver, CipherSender, CipherSocketBuilder};
-use neuras::secure::errors::*;
+use neuras::security::{CipherReceiver, CipherSender, CipherSocketBuilder};
+use neuras::security::errors::*;
 use zmq::{Context, Message};
 
 // Utility for creating `PAIR` sockets with a common endpoint pre-configured.

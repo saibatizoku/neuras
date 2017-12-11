@@ -18,7 +18,7 @@ extern crate zmq_tokio;
 
 use std::io;
 
-use neuras::secure::{secure_client_socket, secure_server_socket};
+use neuras::security::{secure_client_socket, secure_server_socket};
 use futures::{stream, Future, Sink, Stream};
 use tokio_core::reactor::Core;
 use zmq_tokio::Socket;

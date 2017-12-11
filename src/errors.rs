@@ -2,7 +2,7 @@ use std::io;
 
 use zmq;
 
-use super::secure;
+use super::security;
 
 error_chain! {
     errors {
@@ -17,7 +17,7 @@ error_chain! {
         }
     }
     links {
-        Secure(secure::errors::Error, secure::errors::ErrorKind);
+        Security(security::errors::Error, security::errors::ErrorKind);
     }
     foreign_links {
         Io(io::Error);
