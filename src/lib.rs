@@ -22,12 +22,15 @@ pub extern crate zmq_tokio;
 pub mod clock;
 /// Error handling.
 pub mod errors;
+mod init;
 // Security for socket communications.
 pub mod security;
 // Sockets for networking.
 pub mod socket;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
+
+pub use init::init;
 
 bitflags! {
     /// Typesafe flags for sending/receiving `zmq::Message` on a `zmq::Socket`.
