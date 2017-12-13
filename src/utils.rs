@@ -108,7 +108,7 @@ mod tests {
     // With these tests, we are making sure that we can properly parse
     // the urls that our crate uses
     #[test]
-    fn decode_inproc_socket() {
+    fn decode_inproc_endpoint() {
         let socket_addr = "inproc:/tmp/hello";
         let parsed: Url = socket_addr.parse().unwrap();
         assert_eq!(parsed.scheme(), "inproc");
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_ipc_socket() {
+    fn decode_ipc_endpoint() {
         let socket_addr = "ipc:/tmp/hello";
         let parsed: Url = socket_addr.parse().unwrap();
         assert_eq!(parsed.scheme(), "ipc");
@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_generic_tcp_socket() {
+    fn decode_generic_tcp_endpoint() {
         let socket_addr = "tcp://*:5566";
         let parsed: Url = socket_addr.parse().unwrap();
         assert_eq!(parsed.scheme(), "tcp");

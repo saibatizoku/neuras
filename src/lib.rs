@@ -1,5 +1,5 @@
-//! neuras - A high-level API for networking with ØMQ ("zeromq") and tokio.
-//! =======================================================================
+//! neuras - A high-level API for networking with ØMQ (zeromq)
+//! ==========================================================
 //!
 //! An attempt at having a high-level API on top of ØMQ's awesome foundations,
 //! as suggested by
@@ -22,7 +22,7 @@ extern crate zmq_tokio;
 pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;
-/// Error handling.
+// Crate-wide error chain.
 pub mod errors;
 // Library initialization scheme.
 mod initialize;
