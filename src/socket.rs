@@ -57,13 +57,93 @@ pub fn socket_new_pub(endpoint: &str) -> Result<Socket> {
     Ok(socket)
 }
 
+// TODO: use typed endpoints
+/// Create a new `zmq::REQ` socket given an endpoint. Default action is `connect`
+pub fn socket_new_req(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::REQ)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::REP` socket given an endpoint. Default action is `bind`
+pub fn socket_new_rep(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::REP)?;
+    let _ = socket_bind(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::DEALER` socket given an endpoint. Default action is `connect`
+pub fn socket_new_dealer(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::DEALER)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::ROUTER` socket given an endpoint. Default action is `bind`
+pub fn socket_new_router(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::ROUTER)?;
+    let _ = socket_bind(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::PUSH` socket given an endpoint. Default action is `connect`
+pub fn socket_new_push(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::PUSH)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::PULL` socket given an endpoint. Default action is `bind`
+pub fn socket_new_pull(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::PULL)?;
+    let _ = socket_bind(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::XSUB` socket given an endpoint. Default action is `connect`
+pub fn socket_new_xsub(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::XSUB)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::XPUB` socket given an endpoint. Default action is `bind`
+pub fn socket_new_xpub(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::XPUB)?;
+    let _ = socket_bind(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::PAIR` socket given an endpoint. Default action is `connect`
+pub fn socket_new_pair(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::PAIR)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
+// TODO: use typed endpoints
+/// Create a new `zmq::STREAM` socket given an endpoint. Default action is `connect`
+pub fn socket_new_stream(endpoint: &str) -> Result<Socket> {
+    let socket = Socket::new(zmq::STREAM)?;
+    let _ = socket_connect(&socket, endpoint)?;
+    Ok(socket)
+}
+
 /// Return a reference to the underlying `zmq::Socket`
 pub fn socket_resolve(socket: &Socket) -> &zmq::Socket {
     &socket.inner
 }
 
 /// Bind a socket to a given endpoint
-pub fn socket_bind(socket: &Socket, ep: &str) -> Result<()> {
+pub fn socket_bind(socket: &Socket, ep: &str) -> Result<String> {
     let _bind = socket.resolve().bind(ep)?;
     Ok(())
 }

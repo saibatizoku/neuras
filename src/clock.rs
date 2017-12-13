@@ -83,8 +83,52 @@ fn get_system_time() -> Result<Duration> {
         .chain_err(|| ErrorKind::SysClockBeforeEpoch)
 }
 
+/// A new `Clock` instance is created with the `std::time::Instant` it was created.
+pub fn clock_new() -> Clock {
+    Clock {
+        start: Instant::now(),
+    }
+}
 
-/// Clock type.
+/// Sleep for a number of milliseconds.
+pub fn clock_sleep(ms: u64) {
+    ::std::thread::sleep(::std::time::Duration::from_millis(ms))
+}
+
+/// Returns monotonic clock in milliseconds.
+pub fn clock_mono(clock: &Clock) -> i64 {
+    let timestamp = clock.start.elapsed();
+    duration_to_millis(timestamp)
+}
+
+/// Returns monotonic clock in microseconds.
+pub fn clock_usecs(clock: &Clock) -> i64 {
+    let timestamp = clock.start.elapsed();
+    duration_to_micros(timestamp)
+}
+
+/// Returns monotonic clock in milliseconds.
+pub fn clock_time() -> Result<i64> {
+    let timestamp = get_system_time()
+        .chain_err(|| ErrorKind::ClockSystemTime)?;
+    let s = duration_to_millis(timestamp);
+    Ok(s)
+}
+
+/// Returns an RFC 3339 and ISO 8601 UTC date and time string.
+pub fn clock_time_str() -> Result<String> {
+    let timestamp = get_system_time()
+        .chain_err(|| ErrorKind::ClockSystemDateTime)?;
+    let ndt = NaiveDateTime::from_timestamp(
+        timestamp.as_secs() as i64,
+        timestamp.subsec_nanos() as u32,
+        );
+    let dt = DateTime::<Utc>::from_utc(ndt, Utc);
+    let dt_str = dt.to_rfc3339();
+    Ok(dt_str)
+}
+
+/// Convenient API for millisecond clocks and delays.
 #[derive(Copy, Clone, Debug)]
 pub struct Clock {
     start: Instant,
@@ -93,47 +137,32 @@ pub struct Clock {
 impl Clock {
     /// A new `Clock` instance is created with the `std::time::Instant` it was created.
     pub fn new() -> Clock {
-        Clock {
-            start: Instant::now(),
-        }
+        clock_new()
     }
 
     /// Sleep for a number of milliseconds.
     pub fn sleep(&self, ms: u64) {
-        ::std::thread::sleep(::std::time::Duration::from_millis(ms));
+        clock_sleep(ms)
     }
 
     /// Returns monotonic clock in milliseconds.
     pub fn mono(&self) -> i64 {
-        let timestamp = self.start.elapsed();
-        duration_to_millis(timestamp)
+        clock_mono(&self)
     }
 
     /// Returns monotonic clock in microseconds.
     pub fn usecs(&self) -> i64 {
-        let timestamp = self.start.elapsed();
-        duration_to_micros(timestamp)
+        clock_usecs(&self)
     }
 
     /// Returns monotonic clock in milliseconds.
     pub fn time(&self) -> Result<i64> {
-        let timestamp = get_system_time()
-            .chain_err(|| ErrorKind::ClockSystemTime)?;
-        let s = duration_to_millis(timestamp);
-        Ok(s)
+        clock_time()
     }
 
-    /// Returns an RFC 3339 and ISO 8601 date and time string such as `2017-12-09T16:00:00-05:00`.
+    /// Returns an RFC 3339 and ISO 8601 UTC date and time string.
     pub fn time_str(&self) -> Result<String> {
-        let timestamp = get_system_time()
-            .chain_err(|| ErrorKind::ClockSystemDateTime)?;
-        let ndt = NaiveDateTime::from_timestamp(
-            timestamp.as_secs() as i64,
-            timestamp.subsec_nanos() as u32,
-        );
-        let dt = DateTime::<Utc>::from_utc(ndt, Utc);
-        let dt_str = dt.to_rfc3339();
-        Ok(dt_str)
+        clock_time_str()
     }
 }
 
