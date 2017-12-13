@@ -12,16 +12,13 @@ extern crate zmq;
 
 use neuras::security::{CipherReceiver, CipherSender, CipherSocketBuilder};
 use neuras::security::errors::*;
-use zmq::{Context, Message};
+use zmq::Message;
 
 // Utility for creating `PAIR` sockets with a common endpoint pre-configured.
-fn create_cipher_pair(
-    endpoint: &str,
-    context: Option<Context>,
-) -> Result<(CipherSender, CipherReceiver)> {
+fn create_cipher_pair(endpoint: &str,) -> Result<(CipherSender, CipherReceiver)> {
     // Builder to create cipher sockets. Takes `Option<zmq::Context>` as the
     // only argument.
-    let socket_builder = CipherSocketBuilder::new(context)?;
+    let socket_builder = CipherSocketBuilder::new()?;
 
     // Bind the receiver socket to the endpoint
     println!("binding server to {:?}", &endpoint);
@@ -55,9 +52,6 @@ fn run_code() -> Result<()> {
     // to be required (..I'm guessing..).
     let endpoint = "ipc://secure";
 
-    // ZMQ needs a context to run the socket. It is NOT an event-loop reactor.
-    let net_ctx = Context::new();
-
     // While zmq::Socket offers convenience methods for handling &[u8], &str,
     // and Strings, we create a zmq::Message that will be reused throughout,
     // saving memory allocation and speeding up our program while receiving
@@ -67,7 +61,7 @@ fn run_code() -> Result<()> {
     // Build the sender and the receiver, each on a separate thread, sharing the
     // same zmq::Context, and thus enabling the possibility for inter-process
     // communication.
-    let (sender, receiver) = create_cipher_pair(endpoint, Some(net_ctx))?;
+    let (sender, receiver) = create_cipher_pair(endpoint)?;
 
     // The typical REQ-REP pattern is as follows:
     //

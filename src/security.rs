@@ -222,11 +222,8 @@ pub struct CipherSocketBuilder {
 impl CipherSocketBuilder {
     /// Create a new instance of `CipherSocketBuilder` with an optional
     /// `zmq::Context`. If no context is specified, a new one is created.
-    pub fn new(ctx: Option<Context>) -> Result<CipherSocketBuilder> {
-        let context = match ctx {
-            Some(c) => c,
-            None => Context::new(),
-        };
+    pub fn new() -> Result<CipherSocketBuilder> {
+        let context = sys_context();
         Ok(CipherSocketBuilder { context })
     }
 
