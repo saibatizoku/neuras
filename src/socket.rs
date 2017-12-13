@@ -51,9 +51,9 @@ pub fn socket_new_sub(endpoint: &str) -> Result<Socket> {
 
 // TODO: use typed endpoints
 /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
-pub fn socket_new_pub(endpoint: &str) -> Result<Socket> {
+pub fn socket_new_pub(endpoint: &Endpoint) -> Result<Socket> {
     let socket = Socket::new(zmq::PUB)?;
-    let _ = socket_bind(&socket, endpoint)?;
+    let _ = endpoint.plug_to(&socket)?;
     Ok(socket)
 }
 
@@ -158,6 +158,52 @@ pub fn socket_connect(socket: &Socket, ep: &str) -> Result<()> {
     Ok(())
 }
 
+/// Endpoint for connecting and binding sockets
+#[derive(Clone, Debug)]
+pub struct Endpoint {
+    url: String,
+    is_serverish: bool,
+}
+
+impl Endpoint {
+    // Create a new Endpoint with a `&str` and a `bool`.
+    fn new(s: &str, is_serverish: bool) -> Endpoint {
+        let url = s.to_string();
+        Endpoint { url, is_serverish }
+    }
+
+    /// Create a new `Endpoint` marked for binding to a `Socket`.
+    pub fn bind(s: &str) -> Result<Endpoint> {
+        Ok(Endpoint::new(s, true))
+    }
+
+    /// Create a new `Endpoint` marked for connecting to a `Socket`.
+    pub fn connect(s: &str) -> Result<Endpoint> {
+        Ok(Endpoint::new(s, false))
+    }
+
+    /// Returns `true` if the endpoint is marked for binding to a socket,
+    /// it returns `false` if it is marked for connecting to it.
+    pub fn is_serverish(&self) -> bool {
+        self.is_serverish
+    }
+
+    /// Run `bind` or `connect` on a socket, depending on what `is_serverish()` returns.
+    pub fn plug_to(&self, socket: &Socket) -> Result<()> {
+        if self.is_serverish {
+            let _ = socket_bind(socket, self.to_str())?;
+        } else {
+            let _ = socket_connect(socket, self.to_str())?;
+        }
+        Ok(())
+    }
+
+    /// Return the endpoint url as a `&str`.
+    pub fn to_str(&self) -> &str {
+        self.url.as_ref()
+    }
+}
+
 /// Convenient API around `zmq::Socket`
 pub struct Socket {
     inner: zmq::Socket,
@@ -172,7 +218,7 @@ impl Socket {
 
     // TODO: use typed endpoints
     /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
-    pub fn new_pub(endpoint: &str) -> Result<Socket> {
+    pub fn new_pub(endpoint: &Endpoint) -> Result<Socket> {
         socket_new_pub(endpoint)
     }
 
