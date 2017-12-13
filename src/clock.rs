@@ -1,4 +1,4 @@
-//! Safe-type for millisecond clocks and delays.
+//! Convenient millisecond-clocks and delays.
 //!
 //! Heavily inspired on CZMQ's `zclock` class.
 //!

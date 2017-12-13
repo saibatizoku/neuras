@@ -15,8 +15,24 @@ pub mod errors {
 
 use zmq;
 
-use super::init::sys_context;
+use super::initialize::sys_context;
 use self::errors::*;
+
+// Socket flags
+bitflags! {
+    /// Flags for sending/receiving `zmq::Message` on a `zmq::Socket`.
+    ///
+    /// `SocketFlags::ASYNC` is exactly the same as `ZMQ_DONTWAIT`
+    /// `SocketFlags::MULTIPART` is exactly the same as `ZMQ_SNDMORE`
+    ///
+    /// Default value with bits: `0`
+    #[derive(Default)]
+    pub struct SocketFlags: i32 {
+        const ASYNC = 1;
+        const MULTIPART = 2;
+        const ASYNC_MULTIPART = Self::ASYNC.bits | Self::MULTIPART.bits;
+    }
+}
 
 /// Create a new socket given the `zmq::SocketType`
 pub fn socket_new(socket_type: zmq::SocketType) -> Result<Socket> {
@@ -123,5 +139,30 @@ mod tests {
     fn create_new_sub_socket() {
         let socket = socket_new_sub("inproc://pub_test").unwrap();
         assert_eq!(socket.resolve().get_socket_type(), Ok(zmq::SUB));
+    }
+
+    #[test]
+    fn socket_flags_default_to_empty_bitmask() {
+        let flags: SocketFlags = Default::default();
+        assert!(flags.is_empty());
+        assert_eq!(flags.bits(), 0);
+    }
+
+    #[test]
+    fn socket_flags_async_is_zmq_dontwait() {
+        let flag = SocketFlags::ASYNC;
+        assert_eq!(flag.bits(), zmq::DONTWAIT);
+    }
+
+    #[test]
+    fn socket_flags_multipart_is_zmq_sndmore() {
+        let flag = SocketFlags::MULTIPART;
+        assert_eq!(flag.bits(), zmq::SNDMORE);
+    }
+
+    #[test]
+    fn socket_flags_async_multipart_is_zmq_sndmore() {
+        let flags = SocketFlags::ASYNC_MULTIPART;
+        assert_eq!(flags.bits(), zmq::DONTWAIT | zmq::SNDMORE);
     }
 }

@@ -3,8 +3,7 @@
 //! The underlying code uses an implementation of
 //! [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE),
 //! by way of the [rust-zmq](https://github.com/erickt/rust-zmq) crate.
-use zmq::{Context, CurveKeyPair, Message, Sendable, Socket, SocketType};
-
+//!
 pub mod errors {
     //! Errors for secure-socket communications.
     use zmq;
@@ -53,6 +52,10 @@ pub mod errors {
         }
     }
 }
+
+use zmq::{Context, CurveKeyPair, Message, Sendable, Socket, SocketType};
+
+use super::initialize::sys_context;
 
 use self::errors::*;
 
