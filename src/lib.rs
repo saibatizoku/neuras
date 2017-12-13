@@ -39,4 +39,9 @@ pub mod socket;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
 
+
 pub use initialize::init;
+// Convenient API type for dealing with clocks and delays.
+pub use clock::Clock;
+pub use socket::Endpoint;
+pub use socket::Socket;
