@@ -12,17 +12,26 @@ extern crate bitflags;
 extern crate chrono;
 #[macro_use]
 extern crate error_chain;
-pub extern crate futures;
-pub extern crate tokio_core;
-pub extern crate url;
-pub extern crate zmq;
-pub extern crate zmq_tokio;
+extern crate futures;
+extern crate tokio_core;
+extern crate url;
+extern crate zmq;
+extern crate zmq_tokio;
 
+// Actors that interact over the network.
+pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;
 /// Error handling.
 pub mod errors;
-mod init;
+// Library initialization scheme.
+mod initialize;
+// Messages for sockets.
+pub mod message;
+// Polling for sockets.
+pub mod poller;
+// Proxy actor.
+pub mod proxy;
 // Security for socket communications.
 pub mod security;
 // Sockets for networking.
