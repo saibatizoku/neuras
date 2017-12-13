@@ -1,4 +1,4 @@
-//! Convenient millisecond-clocks and delays.
+//! Convenient clock and delays.
 //!
 //! Heavily inspired on CZMQ's `zclock` class.
 //!
@@ -83,7 +83,7 @@ fn get_system_time() -> Result<Duration> {
         .chain_err(|| ErrorKind::SysClockBeforeEpoch)
 }
 
-/// A new `Clock` instance is created with the `std::time::Instant` it was created.
+/// A new `Clock` instance is created with the `std::time::Instant` it was started.
 pub fn clock_new() -> Clock {
     Clock {
         start: Instant::now(),
@@ -128,7 +128,7 @@ pub fn clock_time_str() -> Result<String> {
     Ok(dt_str)
 }
 
-/// Convenient API for millisecond clocks and delays.
+/// Convenient API for clocks and delays.
 #[derive(Copy, Clone, Debug)]
 pub struct Clock {
     start: Instant,
