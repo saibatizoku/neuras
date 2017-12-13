@@ -145,7 +145,11 @@ pub fn socket_resolve(socket: &Socket) -> &zmq::Socket {
 /// Bind a socket to a given endpoint
 pub fn socket_bind(socket: &Socket, ep: &str) -> Result<String> {
     let _bind = socket.resolve().bind(ep)?;
-    Ok(())
+    let endpoint = match socket.resolve().get_last_endpoint()? {
+        Ok(res) => res,
+        Err(_) => bail!("trouble getting last bound endpoint"),
+    };
+    Ok(endpoint)
 }
 
 /// Connect a socket to a given endpoint
@@ -185,8 +189,10 @@ impl Socket {
     pub fn resolve(&self) -> &zmq::Socket {
         socket_resolve(&self)
     }
-    /// Bind a socket to a given endpoint
-    pub fn bind(&self, ep: &str) -> Result<()> {
+    /// Bind a socket to a given endpoint. Returns the
+    /// actual endpoint bound. Useful for unbinding the
+    /// socket.
+    pub fn bind(&self, ep: &str) -> Result<String> {
         socket_bind(&self, ep)
     }
 
