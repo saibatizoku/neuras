@@ -1,6 +1,5 @@
 pub mod errors {
-    error_chain! {
-    }
+    error_chain!{}
 }
 use self::errors::*;
 use zmq;

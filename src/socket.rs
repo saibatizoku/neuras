@@ -38,7 +38,7 @@ bitflags! {
 pub fn socket_new(socket_type: zmq::SocketType) -> Result<Socket> {
     let context = sys_context();
     let inner = context.socket(socket_type)?;
-    Ok( Socket { inner } )
+    Ok(Socket { inner })
 }
 
 // TODO: use typed endpoints

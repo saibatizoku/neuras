@@ -15,7 +15,7 @@ use neuras::security::errors::*;
 use zmq::Message;
 
 // Utility for creating `PAIR` sockets with a common endpoint pre-configured.
-fn create_cipher_pair(endpoint: &str,) -> Result<(CipherSender, CipherReceiver)> {
+fn create_cipher_pair(endpoint: &str) -> Result<(CipherSender, CipherReceiver)> {
     // Builder to create cipher sockets. Takes `Option<zmq::Context>` as the
     // only argument.
     let socket_builder = CipherSocketBuilder::new()?;

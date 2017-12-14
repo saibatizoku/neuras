@@ -109,20 +109,16 @@ pub fn clock_usecs(clock: &Clock) -> i64 {
 
 /// Returns monotonic clock in milliseconds.
 pub fn clock_time() -> Result<i64> {
-    let timestamp = get_system_time()
-        .chain_err(|| ErrorKind::ClockSystemTime)?;
+    let timestamp = get_system_time().chain_err(|| ErrorKind::ClockSystemTime)?;
     let s = duration_to_millis(timestamp);
     Ok(s)
 }
 
 /// Returns an RFC 3339 and ISO 8601 UTC date and time string.
 pub fn clock_time_str() -> Result<String> {
-    let timestamp = get_system_time()
-        .chain_err(|| ErrorKind::ClockSystemDateTime)?;
-    let ndt = NaiveDateTime::from_timestamp(
-        timestamp.as_secs() as i64,
-        timestamp.subsec_nanos() as u32,
-        );
+    let timestamp = get_system_time().chain_err(|| ErrorKind::ClockSystemDateTime)?;
+    let ndt =
+        NaiveDateTime::from_timestamp(timestamp.as_secs() as i64, timestamp.subsec_nanos() as u32);
     let dt = DateTime::<Utc>::from_utc(ndt, Utc);
     let dt_str = dt.to_rfc3339();
     Ok(dt_str)
