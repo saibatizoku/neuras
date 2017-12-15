@@ -15,8 +15,84 @@ pub mod errors {
 
 use zmq;
 
-use super::initialize::sys_context;
+use initialize::sys_context;
+
 use self::errors::*;
+
+
+/// Convenient API around `zmq::Socket`
+pub struct Socket {
+    inner: zmq::Socket,
+    is_serverish: bool,
+}
+
+/// Socket type associated functions
+impl Socket {
+    /// Create a new socket given the `zmq::SocketType`
+    pub fn new(socket_type: zmq::SocketType) -> Result<Socket> {
+        socket_new(socket_type)
+    }
+
+    // TODO: use typed endpoints
+    /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
+    pub fn new_pub(endpoint: &str) -> Result<Socket> {
+        socket_new_pub(endpoint)
+    }
+
+    // TODO: use typed endpoints
+    /// Create a new `zmq::SUB` socket given an endpoint. Default action is `connect`
+    pub fn new_sub(endpoint: &str) -> Result<Socket> {
+        socket_new_sub(endpoint)
+    }
+
+    // TODO: use typed endpoints
+    /// Create a new `zmq::PULL` socket given an endpoint.
+    pub fn new_pull(endpoint: &str) -> Result<Socket> {
+        socket_new_pull(endpoint)
+    }
+
+    // TODO: use typed endpoints
+    /// Create a new `zmq::PUSH` socket given an endpoint.
+    pub fn new_push(endpoint: &str) -> Result<Socket> {
+        socket_new_push(endpoint)
+    }
+}
+
+/// Socket instance methods
+impl Socket {
+    /// Return a reference to the underlying `zmq::Socket`
+    pub fn resolve(&self) -> &zmq::Socket {
+        socket_resolve(&self)
+    }
+
+    /// Returns `true` if the endpoint is marked for binding to a socket,
+    /// it returns `false` if it is marked for connecting to it.
+    pub fn is_serverish(&self) -> bool {
+        self.is_serverish
+    }
+
+    /// Run `bind` or `connect` on a socket, depending on what `is_serverish()` returns.
+    pub fn plug(&self, endpoint: &Endpoint) -> Result<()> {
+        if self.is_serverish {
+            let _ = self.bind(endpoint.to_str())?;
+        } else {
+            let _ = self.connect(endpoint.to_str())?;
+        }
+        Ok(())
+    }
+
+    /// Bind a socket to a given endpoint. Returns the
+    /// actual endpoint bound. Useful for unbinding the
+    /// socket.
+    pub fn bind(&self, ep: &str) -> Result<String> {
+        socket_bind(&self, ep)
+    }
+
+    /// Connect a socket to a given endpoint
+    pub fn connect(&self, ep: &str) -> Result<()> {
+        socket_connect(&self, ep)
+    }
+}
 
 // Socket flags
 bitflags! {
@@ -156,96 +232,6 @@ pub fn socket_bind(socket: &Socket, ep: &str) -> Result<String> {
 pub fn socket_connect(socket: &Socket, ep: &str) -> Result<()> {
     let _bind = socket.resolve().connect(ep)?;
     Ok(())
-}
-
-/// Endpoint for connecting and binding sockets
-#[derive(Clone, Debug)]
-pub struct Endpoint {
-    url: String,
-    is_serverish: bool,
-}
-
-impl Endpoint {
-    // Create a new Endpoint with a `&str` and a `bool`.
-    fn new(s: &str, is_serverish: bool) -> Endpoint {
-        let url = s.to_string();
-        Endpoint { url, is_serverish }
-    }
-
-    /// Create a new `Endpoint` marked for binding to a `Socket`.
-    pub fn bind(s: &str) -> Result<Endpoint> {
-        Ok(Endpoint::new(s, true))
-    }
-
-    /// Create a new `Endpoint` marked for connecting to a `Socket`.
-    pub fn connect(s: &str) -> Result<Endpoint> {
-        Ok(Endpoint::new(s, false))
-    }
-
-    /// Returns `true` if the endpoint is marked for binding to a socket,
-    /// it returns `false` if it is marked for connecting to it.
-    pub fn is_serverish(&self) -> bool {
-        self.is_serverish
-    }
-
-    /// Run `bind` or `connect` on a socket, depending on what `is_serverish()` returns.
-    pub fn plug_to(&self, socket: &Socket) -> Result<()> {
-        if self.is_serverish {
-            let _ = socket_bind(socket, self.to_str())?;
-        } else {
-            let _ = socket_connect(socket, self.to_str())?;
-        }
-        Ok(())
-    }
-
-    /// Return the endpoint url as a `&str`.
-    pub fn to_str(&self) -> &str {
-        self.url.as_ref()
-    }
-}
-
-/// Convenient API around `zmq::Socket`
-pub struct Socket {
-    inner: zmq::Socket,
-}
-
-/// Socket type associated functions
-impl Socket {
-    /// Create a new socket given the `zmq::SocketType`
-    pub fn new(socket_type: zmq::SocketType) -> Result<Socket> {
-        socket_new(socket_type)
-    }
-
-    // TODO: use typed endpoints
-    /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
-    pub fn new_pub(endpoint: &Endpoint) -> Result<Socket> {
-        socket_new_pub(endpoint)
-    }
-
-    // TODO: use typed endpoints
-    /// Create a new `zmq::SUB` socket given an endpoint. Default action is `connect`
-    pub fn new_sub(endpoint: &str) -> Result<Socket> {
-        socket_new_sub(endpoint)
-    }
-}
-
-/// Socket instance methods
-impl Socket {
-    /// Return a reference to the underlying `zmq::Socket`
-    pub fn resolve(&self) -> &zmq::Socket {
-        socket_resolve(&self)
-    }
-    /// Bind a socket to a given endpoint. Returns the
-    /// actual endpoint bound. Useful for unbinding the
-    /// socket.
-    pub fn bind(&self, ep: &str) -> Result<String> {
-        socket_bind(&self, ep)
-    }
-
-    /// Connect a socket to a given endpoint
-    pub fn connect(&self, ep: &str) -> Result<()> {
-        socket_connect(&self, ep)
-    }
 }
 
 #[cfg(test)]
