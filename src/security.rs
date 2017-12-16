@@ -60,6 +60,37 @@ use super::initialize::sys_context;
 
 use self::errors::*;
 
+/// Certificates that can encode `zmq::CurveKeyPair` into `TOML` format.
+/// Useful for authentication purposes.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct KeysCertificate {
+    pub secret_key: String,
+    pub public_key: String,
+}
+
+impl From<CurveKeyPair> for KeysCertificate {
+    fn from(keys: CurveKeyPair) -> Self {
+        KeysCertificate {
+            secret_key: z85_encode(&keys.secret_key).unwrap(),
+            public_key: z85_encode(&keys.public_key).unwrap(),
+        }
+    }
+}
+
+impl Into<CurveKeyPair> for KeysCertificate {
+    fn into(self) -> CurveKeyPair {
+        let secret_key = z85_decode(&self.secret_key).unwrap();
+        let public_key = z85_decode(&self.public_key).unwrap();
+        let mut keys = CurveKeyPair::new().unwrap();
+        let mut key = [0u8; 32];
+        let _ = key.copy_from_slice(&secret_key);
+        keys.secret_key = key;
+        let _ = key.copy_from_slice(&public_key);
+        keys.public_key = key;
+        keys
+    }
+}
+
 /// Secures a ZMQ socket as a server, according to the
 /// [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE) specification.
 pub fn secure_server_socket(socket: &Socket, keys: &CurveKeyPair) -> Result<()> {
