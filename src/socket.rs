@@ -225,12 +225,16 @@ impl Socket {
         self.is_serverish
     }
 
+    pub fn set_serverish(&mut self, f: bool) {
+        self.is_serverish = f;
+    }
+
     /// Run `bind` or `connect` on a socket, depending on what `is_serverish()` returns.
-    pub fn plug(&self, endpoint: &Endpoint) -> Result<()> {
+    pub fn plug(&self, endpoint: &str) -> Result<()> {
         if self.is_serverish {
-            let _ = self.bind(endpoint.to_str())?;
+            let _ = self.bind(endpoint)?;
         } else {
-            let _ = self.connect(endpoint.to_str())?;
+            let _ = self.connect(endpoint)?;
         }
         Ok(())
     }
@@ -268,7 +272,8 @@ bitflags! {
 pub fn socket_new(socket_type: zmq::SocketType) -> Result<Socket> {
     let context = sys_context();
     let inner = context.socket(socket_type)?;
-    Ok(Socket { inner })
+    let is_serverish = false;
+    Ok(Socket { inner, is_serverish })
 }
 
 // TODO: use typed endpoints
@@ -281,9 +286,10 @@ pub fn socket_new_sub(endpoint: &str) -> Result<Socket> {
 
 // TODO: use typed endpoints
 /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
-pub fn socket_new_pub(endpoint: &Endpoint) -> Result<Socket> {
-    let socket = Socket::new(zmq::PUB)?;
-    let _ = endpoint.plug_to(&socket)?;
+pub fn socket_new_pub(endpoint: &str) -> Result<Socket> {
+    let mut socket = Socket::new(zmq::PUB)?;
+    let _ = socket.set_serverish(true);
+    let _ = socket.plug(endpoint)?;
     Ok(socket)
 }
 
@@ -291,7 +297,7 @@ pub fn socket_new_pub(endpoint: &Endpoint) -> Result<Socket> {
 /// Create a new `zmq::REQ` socket given an endpoint. Default action is `connect`
 pub fn socket_new_req(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::REQ)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    let _ = socket.plug(endpoint)?;
     Ok(socket)
 }
 
