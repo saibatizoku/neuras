@@ -41,7 +41,10 @@ extern crate chrono;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
+#[macro_use]
+extern crate serde_derive;
 extern crate tokio_core;
+extern crate toml;
 extern crate url;
 extern crate zmq;
 extern crate zmq_tokio;

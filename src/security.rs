@@ -54,6 +54,7 @@ pub mod errors {
 }
 
 use zmq::{Context, CurveKeyPair, Message, Sendable, Socket, SocketType};
+use zmq::{z85_decode, z85_encode};
 
 use super::initialize::sys_context;
 
@@ -251,7 +252,97 @@ impl CipherSocketBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use toml;
     use zmq;
+
+    const TEST_CERT_FILE: &str = r#"secret_key = "F05VvicyHYA1n0=5$7r5Yn(*(53Dgeb#@A7{SVy="
+public_key = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh"
+"#;
+    const TEST_KEY_PAIR: zmq::CurveKeyPair = zmq::CurveKeyPair {
+        secret_key: SECRET_KEY,
+        public_key: PUBLIC_KEY,
+    };
+    const SECRET_KEY: [u8; 32] = [
+            127,
+            145,
+            224,
+            130,
+            56,
+            117,
+            149,
+            163,
+            112,
+            14,
+            145,
+            50,
+            18,
+            153,
+            44,
+            215,
+            187,
+            142,
+            253,
+            3,
+            15,
+            175,
+            6,
+            73,
+            37,
+            85,
+            211,
+            99,
+            247,
+            205,
+            76,
+            218,
+        ];
+    const PUBLIC_KEY: [u8; 32] =  [
+            211,
+            209,
+            252,
+            48,
+            35,
+            61,
+            92,
+            139,
+            40,
+            188,
+            60,
+            29,
+            2,
+            166,
+            123,
+            61,
+            149,
+            25,
+            172,
+            100,
+            167,
+            70,
+            240,
+            81,
+            32,
+            149,
+            230,
+            67,
+            1,
+            238,
+            203,
+            0,
+        ];
+    const SECRET_HEX: &str = "7f91e082387595a3700e913212992cd7bb8efd030faf06492555d363f7cd4cda";
+    const PUBLIC_HEX: &str = "d3d1fc30233d5c8b28bc3c1d02a67b3d9519ac64a746f0512095e64301eecb00";
+    const SECRET_Z85: &str = "F05VvicyHYA1n0=5$7r5Yn(*(53Dgeb#@A7{SVy=";
+    const PUBLIC_Z85: &str = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh";
+
+    // Inefficient but terse base16 encoder
+    fn print_as_hex(bytes: &[u8]) -> String {
+        bytes
+            .iter()
+            .map(|x| format!("{:02x}", x))
+            .collect::<Vec<_>>()
+            .join("")
+    }
 
     fn setup_socket_n_keys(
         t: zmq::SocketType,
@@ -303,5 +394,54 @@ mod tests {
             &server_key,
             client.get_curve_serverkey().unwrap().as_slice()
         );
+    }
+
+    #[test]
+    fn from_curve_keypair_to_keys_certificate_type() {
+        let keys = TEST_KEY_PAIR;
+
+        assert_eq!(SECRET_HEX, &print_as_hex(&keys.secret_key));
+        assert_eq!(PUBLIC_HEX, &print_as_hex(&keys.public_key));
+
+        let certificate = KeysCertificate::from(keys);
+
+        assert_eq!(SECRET_Z85, &certificate.secret_key);
+        assert_eq!(PUBLIC_Z85, &certificate.public_key);
+
+        let secret = z85_decode(&certificate.secret_key).unwrap();
+        assert_eq!(&print_as_hex(&secret), SECRET_HEX);
+
+        let public = z85_decode(&certificate.public_key).unwrap();
+        assert_eq!(&print_as_hex(&public), PUBLIC_HEX);
+    }
+
+    #[test]
+    fn from_keys_certificate_to_curve_keypair_type() {
+        let certificate = KeysCertificate {
+            secret_key: SECRET_Z85.to_string(),
+            public_key: PUBLIC_Z85.to_string(),
+        };
+        let keys: CurveKeyPair = certificate.into();
+        assert_eq!(keys.secret_key, TEST_KEY_PAIR.secret_key);
+        assert_eq!(keys.public_key, TEST_KEY_PAIR.public_key);
+    }
+
+    #[test]
+    fn from_keys_certificate_to_toml_file() {
+        let certificate = KeysCertificate {
+            secret_key: SECRET_Z85.to_string(),
+            public_key: PUBLIC_Z85.to_string(),
+        };
+        let toml = toml::to_string(&certificate).unwrap();
+
+        assert_eq!(toml, TEST_CERT_FILE);
+    }
+
+    #[test]
+    fn from_toml_to_keys_certificate_file() {
+        let certificate: KeysCertificate = toml::from_str(TEST_CERT_FILE).unwrap();
+        let keys: CurveKeyPair = certificate.into();
+        assert_eq!(keys.secret_key, TEST_KEY_PAIR.secret_key);
+        assert_eq!(keys.public_key, TEST_KEY_PAIR.public_key);
     }
 }
