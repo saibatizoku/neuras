@@ -3,6 +3,160 @@
 //! A high-level socket API that hides regular `zmq::Context` and `zmq::Socket`.
 //!
 //! Inspired by [zsock](http://czmq.zeromq.org/czmq4-0:zsock).
+//!
+//!
+//! ## A Good Ol' Synchronous (Blocking) Example
+//!
+//! This example shows how to run ZMQ sockets like you're used to.
+//!
+//! ```
+//! extern crate neuras;
+//! extern crate zmq;
+//!
+//! use std::thread;
+//!
+//! use neuras::{init, Socket};
+//! use neuras::socket::socket_new_pair;
+//! use neuras::errors::*;
+//!
+//! fn run_synchronous_program() -> Result<()> {
+//!     println!("server starting");
+//!     let stream = Socket::new(zmq::PAIR)?;
+//!     let _ = stream.bind("inproc://socket_example")?;
+//!     println!("client starting");
+//!     let pair = socket_new_pair("inproc://socket_example").unwrap();
+//!
+//!     // Sequencial, blocking calls. This example sends a multipart
+//!     // message. ZMQ will not send data until the final part of the
+//!     // message is sent with a `0` flag.
+//!     let _ = stream.resolve().send("hi", zmq::SNDMORE)?;
+//!     println!("server sent: {:?}", "hi");
+//!
+//!     let _ = stream.resolve().send("world", 0)?;
+//!     println!("server sent: {:?}", "world");
+//!
+//!     // The multipart message was sent, now we receive it.
+//!     // We can resolve to use the `zmq::Socket` directly,
+//!     // and get the message manually. This is good if you
+//!     // want to react depending on any specific message.
+//!     let msg = pair.resolve().recv_msg(0).unwrap();
+//!     assert_eq!(msg.as_str(), Some("hi"));
+//!
+//!     // ZMQ will have received the whole multipart if it
+//!     // has received the first part. That is, the socket
+//!     // will be ready for reading only after the whole
+//!     // multipart message is received.
+//!
+//!     // We check the socket to verify there is more of the
+//!     // message that we have to receive.
+//!     assert_eq!(pair.resolve().get_rcvmore(), Ok(true));
+//!
+//!     let msg = pair.resolve().recv_msg(0).unwrap();
+//!     assert_eq!(msg.as_str(), Some("world"));
+//!
+//!     // We check the socket to verify there is no more of the
+//!     // message that we have to receive.
+//!     assert_eq!(pair.resolve().get_rcvmore(), Ok(false));
+//!
+//!     Ok(())
+//! }
+//!
+//! fn main () {
+//!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
+//!     /// If you don't, beware.... there be monsters here.
+//!     let _ = neuras::init();
+//!     let _run = run_synchronous_program().unwrap();
+//! }
+//! ```
+//!
+//! ## A Good Ol' Polling Example
+//!
+//! This example shows how to poll ZMQ sockets like you're used to.
+//!
+//! ```
+//! extern crate neuras;
+//! extern crate zmq;
+//!
+//! use std::thread;
+//!
+//! use neuras::{init, Socket};
+//! use neuras::socket::socket_new_pair;
+//! use neuras::errors::*;
+//!
+//! fn run_polling_program() -> Result<()> {
+//!
+//!     // Build a new socket type, flag it as "serverish",
+//!     // and finally "plug" the socket to the endpoint.
+//!     // When a socket is marked as "serverish", the socket's
+//!     // `bind` function is called.
+//!     println!("server starting");
+//!     let mut sender = Socket::new(zmq::PAIR)?;
+//!     let _ = sender.set_serverish(true);
+//!     let _ = sender.plug("inproc://socket_example")?;
+//!
+//!     // Use a convenience function to build a connected PAIR.
+//!     // It automatically calls the socket's `connect` function.
+//!     println!("client starting");
+//!     let client = socket_new_pair("inproc://socket_example").unwrap();
+//!
+//!     let mut continue_flag = true;
+//!
+//!     while continue_flag {
+//!         let mut items = [
+//!             sender.resolve().as_poll_item(zmq::POLLOUT),
+//!             client.resolve().as_poll_item(zmq::POLLIN),
+//!         ];
+//!
+//!         zmq::poll(&mut items, -1).expect("failed polling");
+//!
+//!         if items[0].is_writable() {
+//!             // Sequencial, blocking calls. This example sends a multipart
+//!             // message. ZMQ will not send data until the final part of the
+//!             // message is sent with a `0` flag.
+//!             let _ = sender.resolve().send("hi", zmq::SNDMORE)?;
+//!             println!("server sent: {:?}", "hi");
+//!
+//!             let _ = sender.resolve().send("world", 0)?;
+//!             println!("server sent: {:?}", "world");
+//!         }
+//!
+//!         if items[1].is_readable() {
+//!             // The multipart message was sent, now we receive it.
+//!             // We can resolve to use the `zmq::Socket` directly,
+//!             // and get the message manually. This is good if you
+//!             // want to react depending on any specific message.
+//!             let msg = client.resolve().recv_msg(0).unwrap();
+//!             assert_eq!(msg.as_str(), Some("hi"));
+//!
+//!             // ZMQ will have received the whole multipart if it
+//!             // has received the first part. That is, the socket
+//!             // will be ready for reading only after the whole
+//!             // multipart message is received.
+//!
+//!             // We check the socket to verify there is more of the
+//!             // message that we have to receive.
+//!             assert_eq!(client.resolve().get_rcvmore(), Ok(true));
+//!
+//!             let msg = client.resolve().recv_msg(0).unwrap();
+//!             assert_eq!(msg.as_str(), Some("world"));
+//!
+//!             // We check the socket to verify there is no more of the
+//!             // message that we have to receive.
+//!             assert_eq!(client.resolve().get_rcvmore(), Ok(false));
+//!             continue_flag = false;
+//!         }
+//!     }
+//!
+//!     Ok(())
+//! }
+//!
+//! fn main () {
+//!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
+//!     /// If you don't, beware.... there be monsters here.
+//!     let _ = neuras::init();
+//!     let _run = run_polling_program().unwrap();
+//! }
+//! ```
 pub mod errors {
     //! Socket Errors.
     use zmq;

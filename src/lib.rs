@@ -10,22 +10,26 @@
 //! ```
 //! extern crate neuras;
 //!
-//! use neuras::{init, Endpoint, Socket};
+//! use neuras::{init, Socket};
 //!
 //! const PAIR_ENDPOINT: &str = "inproc://push";
 //!
 //! fn main () {
-//!
 //!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
 //!     /// If you don't, beware.... there be monsters here.
 //!     let _ = neuras::init();
 //!
-//!     let ep = Endpoint::bind(PAIR_ENDPOINT).unwrap();
-//!     let push = Socket::new_push(&ep).unwrap();
+//!     let push = Socket::new_push(PAIR_ENDPOINT).unwrap();
 //!
-//!     let ep = Endpoint::connect(PAIR_ENDPOINT).unwrap();
-//!     let pull = Socket::new_pull(&ep).unwrap();
+//!     let pull = Socket::new_pull(PAIR_ENDPOINT).unwrap();
 //!
+//!     // let _ = push.send("hi").unwrap();
+//!     // let msg_from_push = pull.recv().unwrap();
+//!     // println!("{}", &msg_from_push);
+//!
+//!     // let _ = pull.send("hi").unwrap();
+//!     // let msg_from_pull = push.recv().unwrap();
+//!     // println!("{}", &msg_from_pull);
 //! }
 //! ```
 
@@ -67,5 +71,4 @@ pub mod utils;
 pub use initialize::init;
 // Convenient API type for dealing with clocks and delays.
 pub use clock::Clock;
-pub use socket::Endpoint;
 pub use socket::Socket;
