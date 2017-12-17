@@ -4,6 +4,7 @@
 //!
 //! Inspired by [zsock](http://czmq.zeromq.org/czmq4-0:zsock).
 //!
+//! #Examples
 //!
 //! ## A Good Ol' Synchronous (Blocking) Example
 //!
@@ -20,26 +21,43 @@
 //! use neuras::errors::*;
 //!
 //! fn run_synchronous_program() -> Result<()> {
-//!     println!("server starting");
-//!     let stream = Socket::new(zmq::PAIR)?;
-//!     let _ = stream.bind("inproc://socket_example")?;
+//!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
+//!     /// If you don't, beware.... there be monsters here.
+//!     ///
+//!     /// This initializes a global context that can be
+//!     /// used to create `inproc` connections between any
+//!     /// socket created in our program. That's a good thing.
+//!     let _ = neuras::init();
+//!
+//!     println!("sender starting");
+//!
+//!     // Create a 'sender' socket, using the usual `rust-zmq`
+//!     // `zmq::SocketType`. Note there is no context declaration
+//!     let sender = Socket::new(zmq::PAIR)?;
+//!     // Bind it, the usuall way.
+//!     let _ = sender.bind("inproc://socket_example")?;
 //!     println!("client starting");
-//!     let pair = socket_new_pair("inproc://socket_example").unwrap();
+//!
+//!     // Create a 'client' socket, using the low-level functions
+//!     // available in `neuras::socket::*`. In this case, the
+//!     // socket is *connected* to the endpoint by default.
+//!     let client = socket_new_pair("inproc://socket_example").unwrap();
 //!
 //!     // Sequencial, blocking calls. This example sends a multipart
 //!     // message. ZMQ will not send data until the final part of the
-//!     // message is sent with a `0` flag.
-//!     let _ = stream.resolve().send("hi", zmq::SNDMORE)?;
-//!     println!("server sent: {:?}", "hi");
-//!
-//!     let _ = stream.resolve().send("world", 0)?;
-//!     println!("server sent: {:?}", "world");
+//!     // message is sent WITHOUT a `zmq::SNDMORE` flag. This typically
+//!     // means setting flags to `0` or, `zmq::DONTWAIT` when using
+//!     // async patterns.
+//!     let _ = sender.resolve().send("hi", zmq::SNDMORE)?;
+//!     println!("sender sent: {:?}", "hi");
+//!     let _ = sender.resolve().send("world", 0)?;
+//!     println!("sender sent: {:?}", "world");
 //!
 //!     // The multipart message was sent, now we receive it.
 //!     // We can resolve to use the `zmq::Socket` directly,
 //!     // and get the message manually. This is good if you
 //!     // want to react depending on any specific message.
-//!     let msg = pair.resolve().recv_msg(0).unwrap();
+//!     let msg = client.resolve().recv_msg(0).unwrap();
 //!     assert_eq!(msg.as_str(), Some("hi"));
 //!
 //!     // ZMQ will have received the whole multipart if it
@@ -49,22 +67,19 @@
 //!
 //!     // We check the socket to verify there is more of the
 //!     // message that we have to receive.
-//!     assert_eq!(pair.resolve().get_rcvmore(), Ok(true));
+//!     assert_eq!(client.resolve().get_rcvmore(), Ok(true));
 //!
-//!     let msg = pair.resolve().recv_msg(0).unwrap();
+//!     let msg = client.resolve().recv_msg(0).unwrap();
 //!     assert_eq!(msg.as_str(), Some("world"));
 //!
 //!     // We check the socket to verify there is no more of the
 //!     // message that we have to receive.
-//!     assert_eq!(pair.resolve().get_rcvmore(), Ok(false));
+//!     assert_eq!(client.resolve().get_rcvmore(), Ok(false));
 //!
 //!     Ok(())
 //! }
 //!
 //! fn main () {
-//!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
-//!     /// If you don't, beware.... there be monsters here.
-//!     let _ = neuras::init();
 //!     let _run = run_synchronous_program().unwrap();
 //! }
 //! ```
@@ -97,15 +112,21 @@
 //!     // Use a convenience function to build a connected PAIR.
 //!     // It automatically calls the socket's `connect` function.
 //!     println!("client starting");
-//!     let client = socket_new_pair("inproc://socket_example").unwrap();
+//!     let client = Socket::new(zmq::PAIR)?;
+//!     let _ = client.plug("inproc://socket_example")?;
+//!
+//!     // Get a handle to the underlying `zmq::Socket`
+//!     let sender_socket = sender.resolve();
+//!     let client_socket = client.resolve();
 //!
 //!     let mut continue_flag = true;
 //!
+//!     let mut items = [
+//!         sender_socket.as_poll_item(zmq::POLLOUT),
+//!         client_socket.as_poll_item(zmq::POLLIN),
+//!     ];
+//!
 //!     while continue_flag {
-//!         let mut items = [
-//!             sender.resolve().as_poll_item(zmq::POLLOUT),
-//!             client.resolve().as_poll_item(zmq::POLLIN),
-//!         ];
 //!
 //!         zmq::poll(&mut items, -1).expect("failed polling");
 //!
@@ -113,10 +134,10 @@
 //!             // Sequencial, blocking calls. This example sends a multipart
 //!             // message. ZMQ will not send data until the final part of the
 //!             // message is sent with a `0` flag.
-//!             let _ = sender.resolve().send("hi", zmq::SNDMORE)?;
+//!             let _ = sender_socket.send("hi", zmq::SNDMORE)?;
 //!             println!("server sent: {:?}", "hi");
 //!
-//!             let _ = sender.resolve().send("world", 0)?;
+//!             let _ = sender_socket.send("world", 0)?;
 //!             println!("server sent: {:?}", "world");
 //!         }
 //!
@@ -125,7 +146,7 @@
 //!             // We can resolve to use the `zmq::Socket` directly,
 //!             // and get the message manually. This is good if you
 //!             // want to react depending on any specific message.
-//!             let msg = client.resolve().recv_msg(0).unwrap();
+//!             let msg = client_socket.recv_msg(0).unwrap();
 //!             assert_eq!(msg.as_str(), Some("hi"));
 //!
 //!             // ZMQ will have received the whole multipart if it
@@ -135,14 +156,14 @@
 //!
 //!             // We check the socket to verify there is more of the
 //!             // message that we have to receive.
-//!             assert_eq!(client.resolve().get_rcvmore(), Ok(true));
+//!             assert_eq!(client_socket.get_rcvmore(), Ok(true));
 //!
-//!             let msg = client.resolve().recv_msg(0).unwrap();
+//!             let msg = client_socket.recv_msg(0).unwrap();
 //!             assert_eq!(msg.as_str(), Some("world"));
 //!
 //!             // We check the socket to verify there is no more of the
 //!             // message that we have to receive.
-//!             assert_eq!(client.resolve().get_rcvmore(), Ok(false));
+//!             assert_eq!(client_socket.get_rcvmore(), Ok(false));
 //!             continue_flag = false;
 //!         }
 //!     }
