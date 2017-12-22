@@ -44,6 +44,7 @@ extern crate futures;
 #[macro_use]
 extern crate serde_derive;
 extern crate tokio_core;
+extern crate tokio_signal;
 extern crate toml;
 extern crate url;
 extern crate zmq;
