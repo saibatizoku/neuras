@@ -180,15 +180,19 @@
 //! ```
 pub mod errors {
     //! Socket Errors.
+    use std::io;
     use zmq;
     error_chain! {
         foreign_links {
+            Io(io::Error);
             Zmq(zmq::Error);
         }
     }
 }
 
+use tokio_core::reactor::Handle;
 use zmq;
+use zmq_tokio;
 
 use initialize::sys_context;
 
@@ -234,6 +238,12 @@ impl Socket {
 
 /// Socket instance methods
 impl Socket {
+    /// Return a `zmq_tokio::Socket`. Consumes `self`.
+    pub fn tokio(self, handle: &Handle) -> Result<zmq_tokio::Socket> {
+        let socket = zmq_tokio::Socket::new(self.inner, handle)?;
+        Ok(socket)
+    }
+
     /// Return a reference to the underlying `zmq::Socket`
     pub fn resolve(&self) -> &zmq::Socket {
         socket_resolve(&self)
