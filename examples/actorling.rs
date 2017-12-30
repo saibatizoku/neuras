@@ -6,13 +6,14 @@ extern crate zmq;
 
 use std::thread;
 use std::time::Duration;
+use std::io::Error as IoError;
 
-use futures::{Future, Stream};
-use futures::stream;
+use futures::{stream, FlattenStream, Future, Stream};
+use futures::stream::Take;
 use futures::future::{err, ok};
 use neuras::actor::Actorling;
 use neuras::actor::errors::*;
-use tokio_core::reactor::Core;
+use tokio_core::reactor::{Core, Handle};
 
 const POLL_TIMEOUT: i64 = 100;
 
@@ -36,7 +37,6 @@ fn run_pipe(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                     match msg.as_str() {
                         Some(a) if a == "STOP" => {
                             println!("pipe sending STOP signal");
-                            let _ = pipe.send("STOPPING", 0)?;
                             let _ = controller.send("STOP", 0)?;
                             println!("pipe is stopping");
                             break;
@@ -164,7 +164,7 @@ fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                     println!("msg: {:?}", msg);
                     Ok(&controller)
                 })
-                .and_then(|sock| {
+                .and_then(|_| {
                     println!("using it again!");
                     Ok(())
                 });
@@ -175,6 +175,16 @@ fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
         .unwrap();
 
     Ok(public_thread)
+}
+
+type FutureStream =
+    Future<Item = Box<Stream<Error = IoError, Item = ()> + Send>, Error = IoError> + Send;
+
+type SignalInterruption = Take<FlattenStream<Box<FutureStream>>>;
+
+fn catch_sigint(handle: &Handle) -> Result<SignalInterruption> {
+    let ctrl_c = tokio_signal::ctrl_c(&handle).flatten_stream().take(1);
+    Ok(ctrl_c)
 }
 
 fn main() {
@@ -192,27 +202,25 @@ fn main() {
 
     // Run a tokio reactor to catch incoming signals from CTRL-C.
     // Returns a future that exits with the first signal it receives.
-    let ctrl_c = tokio_signal::ctrl_c(&core.handle())
-        .flatten_stream()
-        .take(1)
-        .for_each(|_| {
-            // create a socket to connect to the pipe thread
-            let sender = actor.context().socket(zmq::PAIR)?;
-            let _ = sender.connect(&actor.pipe_address())?;
+    let proc_handle = catch_sigint(&core.handle()).unwrap();
+    let proc_interrupt = proc_handle.for_each(|_| {
+        // create a socket to connect to the pipe thread
+        let sender = actor.context().socket(zmq::PAIR)?;
+        let _ = sender.connect(&actor.pipe_address())?;
 
-            println!();
-            println!("SIGINT received: Actorling pipe-thread will be interrupted!");
+        println!();
+        println!("SIGINT received: Actorling pipe-thread will be interrupted!");
 
-            // Send the `STOP` message to the pipe thread.
-            let _ = sender.send("STOP", 0)?;
-            Ok(())
-        });
+        // Send the `STOP` message to the pipe thread.
+        let _ = sender.send("STOP", 0)?;
+        Ok(())
+    });
 
     // Run the event-loop checking for CTRL-C interrupts.
     //
     // This will loop and block the main thread until the user presses
     // CTRL-C or a SIGINT is sent via the usual unix-like fashion.
-    let _ = core.run(ctrl_c).unwrap();
+    let _ = core.run(proc_interrupt).unwrap();
 
     // Wait for the child threads to join.
     for t in threads {
