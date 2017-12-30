@@ -59,7 +59,6 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 
-
 // Convert `std::time::Duration` to microseconds.
 fn duration_to_micros(d: Duration) -> i64 {
     let sec_to_micros = d.as_secs() as f64 * 1e6;

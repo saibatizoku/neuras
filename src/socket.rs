@@ -194,7 +194,6 @@ use initialize::sys_context;
 
 use self::errors::*;
 
-
 /// Convenient API around `zmq::Socket`
 pub struct Socket {
     inner: zmq::Socket,
@@ -294,7 +293,10 @@ pub fn socket_new(socket_type: zmq::SocketType) -> Result<Socket> {
     let context = sys_context();
     let inner = context.socket(socket_type)?;
     let is_serverish = false;
-    Ok(Socket { inner, is_serverish })
+    Ok(Socket {
+        inner,
+        is_serverish,
+    })
 }
 
 // TODO: use typed endpoints
