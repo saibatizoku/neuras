@@ -23,3 +23,11 @@ zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git" }
 
 [profile.release]
 lto = true
+
+[[example]]
+name = "ciphered-sockets"
+path = "examples/ciphered-sockets.rs"
+
+[[example]]
+name = "tokio-client"
+path = "examples/tokio-client.rs"
