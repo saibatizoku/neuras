@@ -16,6 +16,7 @@ tokio-proto = "0.1"
 tokio-service = "0.1"
 tokio-signal = "0.1"
 toml = "0.4"
+uuid = { version = "0.5", features = ["serde", "v4", "v5"] }
 url = "1.5.1"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
 zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git" }

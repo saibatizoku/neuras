@@ -47,6 +47,7 @@ extern crate tokio_core;
 extern crate tokio_signal;
 extern crate toml;
 extern crate url;
+extern crate uuid;
 extern crate zmq;
 extern crate zmq_tokio;
 
