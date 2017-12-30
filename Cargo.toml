@@ -25,6 +25,10 @@ zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git" }
 lto = true
 
 [[example]]
+name = "actorling"
+path = "examples/actorling.rs"
+
+[[example]]
 name = "ciphered-sockets"
 path = "examples/ciphered-sockets.rs"
 
