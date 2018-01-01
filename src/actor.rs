@@ -101,7 +101,7 @@ impl Actorling {
         Ok(builder)
     }
 
-    pub fn run_thread<F, T>(&self, callback: F) -> Result<thread::JoinHandle<T>>
+    pub fn run_thread<F, T>(&self, name: &str, callback: F) -> Result<thread::JoinHandle<T>>
     where
         F: FnOnce() -> T,
         F: Send + 'static,
@@ -109,13 +109,14 @@ impl Actorling {
     {
         let thred = self.setup_thread()?;
         let handler = thred
+            .name(name.to_string())
             .spawn(callback)
             .chain_err(|| "could not spawn actorling thread");
         handler
     }
 
     pub fn run(&self) -> Result<()> {
-        let handle = self.run_thread(move || {
+        let handle = self.run_thread("default", move || {
             println!("running actorling thread");
             thread::sleep(Duration::from_millis(1500));
             println!("exiting actorling thread");
