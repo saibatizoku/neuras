@@ -1,3 +1,6 @@
+#![feature(unboxed_closures)]
+#[macro_use]
+extern crate error_chain;
 extern crate futures;
 extern crate neuras;
 extern crate tokio_core;
@@ -8,21 +11,22 @@ use std::thread;
 use std::time::Duration;
 use std::io::Error as IoError;
 
-use futures::{stream, FlattenStream, Future, Stream};
-use futures::stream::Take;
+use futures::{FlattenStream, Future, Stream};
 use futures::future::{err, ok};
+use futures::stream;
+use futures::stream::Take;
 use neuras::actor::Actorling;
 use neuras::actor::errors::*;
 use tokio_core::reactor::{Core, Handle};
 
 const POLL_TIMEOUT: i64 = 100;
 
-fn run_pipe(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
+fn run_pipe_thread(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.pipe_address();
     let context = actor.context();
     let pipe_thread = actor
-        .run_thread(move || {
-            println!("running pipe thread");
+        .run_thread("pipe", move || {
+            println!("enter: pipe thread");
             let pipe = context.socket(zmq::PAIR)?;
             let _ = pipe.bind(&addr)?;
             let controller = context.socket(zmq::PUB)?;
@@ -36,9 +40,9 @@ fn run_pipe(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                     let _ = pipe.recv(&mut msg, 0)?;
                     match msg.as_str() {
                         Some(a) if a == "STOP" => {
-                            println!("pipe sending STOP signal");
+                            println!("broadcast: STOP");
                             let _ = controller.send("STOP", 0)?;
-                            println!("pipe is stopping");
+                            eprintln!("stop: pipe");
                             break;
                         }
                         _ => {}
@@ -53,7 +57,7 @@ fn run_pipe(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                 }
                 thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
             }
-            println!("exiting pipe thread");
+            println!("exit: pipe thread");
             Ok(())
         })
         .unwrap();
@@ -64,8 +68,8 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.address();
     let context = actor.context();
     let public_thread = actor
-        .run_thread(move || {
-            println!("running public thread");
+        .run_thread("public", move || {
+            println!("enter: public thread");
             let public = context.socket(zmq::REP)?;
             let _ = public.bind(&addr)?;
             let controller = context.socket(zmq::SUB)?;
@@ -82,7 +86,7 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                     let _ = controller.recv(&mut msg, 0)?;
                     match msg.as_str() {
                         Some(a) if a == "STOP" => {
-                            println!("public is stopping");
+                            eprintln!("stop: public");
                             let _ = public.disconnect(&addr)?;
                             let _ = controller.set_unsubscribe(b"")?;
                             let _ = controller.disconnect("inproc://controller")?;
@@ -114,62 +118,53 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                 }
                 thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
             }
-            println!("exiting public thread");
+            println!("exit: public thread");
             Ok(())
         })
         .unwrap();
     Ok(public_thread)
 }
 
+fn control_pipe_stream(context: zmq::Context) -> Result<()> {
+    let mut core = Core::new().unwrap();
+    let controller = context.socket(zmq::SUB).unwrap();
+    let _ = controller.connect("inproc://controller").unwrap();
+    let _ = controller.set_subscribe(b"").unwrap();
+    let mut msg = zmq::Message::new();
+    let control_pipe = stream::unfold(controller, |controller| {
+        let _ = controller.recv(&mut msg, 0).unwrap();
+        let fut = match msg.as_str() {
+            Some(m) if m == "STOP" => {
+                eprintln!("stop: play");
+                let _ = controller.set_unsubscribe(b"").unwrap();
+                let _ = controller.disconnect("inproc://controller").unwrap();
+                return None;
+            }
+            Some(m) => ok::<(String, zmq::Socket), ()>((m.to_string(), controller)),
+            None => err::<(String, zmq::Socket), ()>(()),
+        };
+        Some(fut)
+    }).for_each(|msg| {
+        println!("msg: {:?}", msg);
+        Ok(())
+    });
+    let _ = core.run(control_pipe).unwrap();
+    Ok(())
+}
+
 fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.address();
     let context = actor.context();
     let public_thread = actor
-        .run_thread(move || {
-            println!("running play thread");
-            let mut core = Core::new().unwrap();
+        .run_thread("play", move || {
+            println!("enter: play thread");
             let public = context.socket(zmq::REQ).unwrap();
             let _ = public.connect(&addr).unwrap();
-            let controller = context.socket(zmq::SUB).unwrap();
-            let _ = controller.connect("inproc://controller").unwrap();
-            let _ = controller.set_subscribe(b"").unwrap();
-            let c = &controller;
 
-            let mut msg = zmq::Message::new();
-            let mut stream = stream::unfold(c, |controller| {
-                let _ = controller.recv(&mut msg, 0).unwrap();
-                let fut = match msg.as_str() {
-                    Some(m) if m == "STOP" => {
-                        println!("stopping play");
-                        return None;
-                    }
-                    Some(m) => ok::<_, ()>((m.to_string(), controller)),
-                    None => err::<_, ()>(()),
-                };
-                Some(fut)
-            });
-            let _future = match stream.poll() {
-                Ok(futures::Async::Ready(Some(a))) => ok::<String, ()>(a),
-                Ok(futures::Async::Ready(None)) => {
-                    println!("finished play");
-                    let _ = controller.set_unsubscribe(b"").unwrap();
-                    let _ = controller.disconnect("inproc://controller").unwrap();
-                    println!("play thread interrupted");
-                    return Ok(());
-                }
-                _ => err::<String, ()>(()),
-            };
-            let fut = _future
-                .and_then(|msg| {
-                    println!("msg: {:?}", msg);
-                    Ok(&controller)
-                })
-                .and_then(|_| {
-                    println!("using it again!");
-                    Ok(())
-                });
-            let _ = core.run(fut).unwrap();
-            println!("exiting play thread");
+            let _run_pipe = control_pipe_stream(context).unwrap();
+
+            let _ = public.disconnect(&addr).unwrap();
+            println!("exit: play thread");
             Ok(())
         })
         .unwrap();
@@ -182,17 +177,15 @@ type FutureStream =
 
 type SignalInterruption = Take<FlattenStream<Box<FutureStream>>>;
 
-fn catch_sigint(handle: &Handle) -> Result<SignalInterruption> {
-    let ctrl_c = tokio_signal::ctrl_c(&handle).flatten_stream().take(1);
-    Ok(ctrl_c)
+fn catch_sigint(handle: &Handle) -> SignalInterruption {
+    tokio_signal::ctrl_c(&handle).flatten_stream().take(1)
 }
 
 fn main() {
-    let mut core = Core::new().unwrap();
     let actor = Actorling::new("tcp://127.0.0.1:8889").unwrap();
 
     // spawn the pipe thread.
-    let pipe_thread = run_pipe(&actor).unwrap();
+    let pipe_thread = run_pipe_thread(&actor).unwrap();
     // spawn the public actorling thread.
     let public_thread = run_public(&actor).unwrap();
     // spawn the public actorling thread.
@@ -200,32 +193,60 @@ fn main() {
 
     let threads = vec![pipe_thread, public_thread, play_thread];
 
+    println!("starting main process");
     // Run a tokio reactor to catch incoming signals from CTRL-C.
     // Returns a future that exits with the first signal it receives.
-    let proc_handle = catch_sigint(&core.handle()).unwrap();
-    let proc_interrupt = proc_handle.for_each(|_| {
-        // create a socket to connect to the pipe thread
-        let sender = actor.context().socket(zmq::PAIR)?;
-        let _ = sender.connect(&actor.pipe_address())?;
-
-        println!();
-        println!("SIGINT received: Actorling pipe-thread will be interrupted!");
-
-        // Send the `STOP` message to the pipe thread.
-        let _ = sender.send("STOP", 0)?;
-        Ok(())
-    });
+    let mut core = Core::new().unwrap();
+    let proc_handle = catch_sigint(&core.handle())
+        .and_then(|_| {
+            // create a socket to connect to the pipe thread
+            let sender = actor.context().socket(zmq::PAIR)?;
+            let _ = sender.connect(&actor.pipe_address())?;
+            Ok(sender)
+        })
+        .and_then(|sender| {
+            println!();
+            println!("SIGINT received: Actorling pipe-thread will be interrupted!");
+            Ok(sender)
+        })
+        .for_each(|sender| {
+            // Send the `STOP` message to the pipe thread.
+            eprintln!("control: STOP");
+            let _ = sender.send("STOP", 0)?;
+            Ok(())
+        });
 
     // Run the event-loop checking for CTRL-C interrupts.
     //
     // This will loop and block the main thread until the user presses
     // CTRL-C or a SIGINT is sent via the usual unix-like fashion.
-    let _ = core.run(proc_interrupt).unwrap();
+    let _ = core.run(proc_handle).unwrap();
 
+    // Exit cleanly by joining children threads into the main thread.
+    // Returns the `exitCode` for this process.
+    let exit_code = match cleanup_n_exit(threads) {
+        Ok(_) => 0,
+        Err(_) => 1,
+    };
+    println!("exiting main process");
+    ::std::process::exit(exit_code)
+}
+
+fn cleanup_n_exit(threads: Vec<thread::JoinHandle<Result<()>>>) -> Result<()> {
     // Wait for the child threads to join.
     for t in threads {
-        let _ = t.join().unwrap();
+        let name = match t.thread().name() {
+            Some(n) => n.to_string(),
+            None => format!("{:?}", t.thread().id()),
+        };
+        match t.join() {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("thread not joined {:?}", e);
+                bail!("thread not joined");
+            }
+        }
+        println!("joined {:?} thread with parent", name);
     }
-    // Exit cleanly.
-    ::std::process::exit(0)
+    Ok(())
 }
