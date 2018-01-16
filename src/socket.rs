@@ -192,7 +192,7 @@ pub mod errors {
 
 use tokio_core::reactor::Handle;
 use zmq;
-use zmq_tokio;
+use zmq_tokio::{self, convert_into_tokio_socket};
 
 use initialize::sys_context;
 
@@ -240,7 +240,7 @@ impl Socket {
 impl Socket {
     /// Return a `zmq_tokio::Socket`. Consumes `self`.
     pub fn tokio(self, handle: &Handle) -> Result<zmq_tokio::Socket> {
-        let socket = zmq_tokio::Socket::new(self.inner, handle)?;
+        let socket = convert_into_tokio_socket(self.inner, handle)?;
         Ok(socket)
     }
 
