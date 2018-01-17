@@ -35,3 +35,7 @@ path = "examples/ciphered-sockets.rs"
 [[example]]
 name = "tokio-client"
 path = "examples/tokio-client.rs"
+
+[[example]]
+name = "tokio-pair"
+path = "examples/tokio-pair.rs"
