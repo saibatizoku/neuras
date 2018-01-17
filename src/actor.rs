@@ -44,16 +44,13 @@ pub mod errors {
 }
 
 use std::thread;
-use std::time::Duration;
 
 use futures::{Future, Sink, Stream};
-use tokio_core::reactor::{Core, Handle};
-use tokio_signal;
+use tokio_core::reactor::Handle;
 use uuid::{Uuid, NAMESPACE_DNS};
 use zmq;
 
-use socket::Socket;
-
+use super::socket::Socket;
 use self::errors::*;
 
 #[allow(dead_code)]
@@ -127,76 +124,6 @@ impl Actorling {
         T: Send + 'static,
     {
         run_thread(name, callback)
-    }
-
-    pub fn run(&self) -> Result<()> {
-        let handle = self.run_thread("default", move || {
-            println!("running actorling thread");
-            thread::sleep(Duration::from_millis(1500));
-            println!("exiting actorling thread");
-        })?;
-        //let _ = handle.join().expect("thread could not be joined");
-        //println!("Actorling thread joined");
-        thread::sleep(Duration::from_millis(2500));
-        println!("Actorling thread stopped");
-        //let mut core = Core::new().unwrap();
-        //let _fn = loop_fn(self.pipe, |pipe| {
-        //    self.recv_msg()
-        //        .and_then(|msg| {
-        //            println!("recv msg from pipe: {:?}", msg);
-        //            Ok(Loop::Break(msg))
-        //        });
-        //});
-        Ok(())
-    }
-
-    pub fn run_loop(&self) -> Result<()> {
-        let pipe = self.pipe.resolve();
-        let mut items = [pipe.as_poll_item(zmq::POLLIN | zmq::POLLOUT)];
-        let mut msg = zmq::Message::new();
-
-        loop {
-            let _ = zmq::poll(&mut items, -1)?;
-            if items[0].is_readable() {
-                let _ = pipe.recv(&mut msg, 0)?;
-                println!("PIPE RECV {:?}", msg.as_str());
-                let _ = match msg.as_str() {
-                    Some("STATUS") => {
-                        println!("pipe status");
-                        let _ = pipe.send("OK", 0)?;
-                    }
-                    Some("PING") => {
-                        println!("pipe ping!");
-                        let _ = pipe.send("PONG", 0)?;
-                    }
-                    Some("STOP") => {
-                        println!("pipe stopped!");
-                        break;
-                    }
-                    _ => {}
-                };
-            }
-            thread::sleep(Duration::from_millis(1));
-        }
-        println!("actorling stopped running!");
-        Ok(())
-    }
-
-    pub fn run_with_signal_catch(&self) -> Result<()> {
-        let mut core = Core::new().unwrap();
-        let ctrl_c = tokio_signal::ctrl_c(&core.handle()).flatten_stream();
-
-        let limited = ctrl_c.take(1);
-        let future = limited.for_each(|()| {
-            println!();
-            println!("CTRL-C pressed. Exiting.");
-            Ok(())
-        });
-
-        eprintln!("running core");
-        core.run(future).unwrap();
-        eprintln!("core finished");
-        Ok(())
     }
 
     /// Start the current actorling instance.
