@@ -4,7 +4,7 @@
 //!
 //! Inspired by [zsock](http://czmq.zeromq.org/czmq4-0:zsock).
 //!
-//! #Examples
+//! # Examples
 //!
 //! ## A Good Ol' Synchronous (Blocking) Example
 //!
