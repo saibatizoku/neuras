@@ -60,11 +60,11 @@ pub mod errors;
 // Library initialization scheme.
 mod initialize;
 // Messages for sockets.
-pub mod message;
+mod message;
 // Polling for sockets.
-pub mod poller;
+mod poller;
 // Proxy actor.
-pub mod proxy;
+mod proxy;
 // Security for socket communications.
 pub mod security;
 // Sockets for networking.
