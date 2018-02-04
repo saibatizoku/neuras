@@ -3,24 +3,24 @@ name = "neuras"
 version = "0.1.2"
 authors = ["Joaquín R <globojorro@gmail.com>"]
 
+[features]
+default = []
+async-tokio = ["futures", "tokio-core", "tokio-signal", "zmq-tokio"]
+
 [dependencies]
 bitflags = "1.0"
 chrono = "0.4"
 error-chain = "0.11.0"
-futures = "0.1.14"
 serde = "1.0"
 serde_derive = "1.0"
-tokio-core = "0.1"
-tokio-io = "0.1"
-tokio-proto = "0.1"
-tokio-service = "0.1"
-tokio-signal = "0.1"
 toml = "0.4"
 uuid = { version = "0.5", features = ["serde", "v4", "v5"] }
 url = "1.5.1"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
-zmq-mio = { git = "https://github.com/saibatizoku/zmq-tokio.git", branch = "saiba-dev" }
-zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git", branch = "saiba-dev" }
+futures = { version = "0.1.14", optional = true }
+tokio-core = { version = "0.1", optional = true }
+tokio-signal = { version = "0.1", optional = true }
+zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git", branch = "saiba-dev", optional = true }
 
 [profile.release]
 lto = true
@@ -28,6 +28,7 @@ lto = true
 [[example]]
 name = "actorling"
 path = "examples/actorling.rs"
+required-features = ["async-tokio"]
 
 [[example]]
 name = "ciphered-sockets"
@@ -36,7 +37,11 @@ path = "examples/ciphered-sockets.rs"
 [[example]]
 name = "tokio-client"
 path = "examples/tokio-client.rs"
+required-features = ["async-tokio"]
 
 [[example]]
 name = "tokio-pair"
 path = "examples/tokio-pair.rs"
+required-features = ["async-tokio"]
+
+[workspace]
