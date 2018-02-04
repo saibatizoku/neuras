@@ -32,7 +32,6 @@
 //!     // println!("{}", &msg_from_pull);
 //! }
 //! ```
-
 #![recursion_limit = "1024"]
 
 #[macro_use]
@@ -40,18 +39,25 @@ extern crate bitflags;
 extern crate chrono;
 #[macro_use]
 extern crate error_chain;
-extern crate futures;
 #[macro_use]
 extern crate serde_derive;
-extern crate tokio_core;
-extern crate tokio_signal;
 extern crate toml;
 extern crate url;
 extern crate uuid;
 extern crate zmq;
+
+// Optional crates from `async-tokio` feature
+#[cfg(feature = "async-tokio")]
+extern crate futures;
+#[cfg(feature = "async-tokio")]
+extern crate tokio_core;
+#[cfg(feature = "async-tokio")]
+extern crate tokio_signal;
+#[cfg(feature = "async-tokio")]
 extern crate zmq_tokio;
 
 // Actors that interact over the network.
+#[cfg(feature = "async-tokio")]
 pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;

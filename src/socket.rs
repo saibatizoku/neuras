@@ -190,8 +190,11 @@ pub mod errors {
     }
 }
 
-use tokio_core::reactor::Handle;
 use zmq;
+
+#[cfg(feature = "async-tokio")]
+use tokio_core::reactor::Handle;
+#[cfg(feature = "async-tokio")]
 use zmq_tokio::{self, convert_into_tokio_socket};
 
 use initialize::sys_context;
@@ -238,6 +241,7 @@ impl Socket {
 
 /// Socket instance methods
 impl Socket {
+    #[cfg(feature = "async-tokio")]
     /// Return a `zmq_tokio::Socket`. Consumes `self`.
     pub fn tokio(self, handle: &Handle) -> Result<zmq_tokio::Socket> {
         let socket = convert_into_tokio_socket(self.inner, handle)?;
