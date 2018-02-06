@@ -160,22 +160,6 @@ fn uuid_pipe_address(uuid: &Uuid) -> String {
     format!("inproc://{}", uuid.simple().to_string())
 }
 
-fn _start_pipe_server(
-    pipe: Socket,
-    handle: &Handle,
-) -> Box<Future<Item = (), Error = ::std::io::Error> + ::std::marker::Send + 'static> {
-    let sender = pipe.tokio(handle).unwrap();
-    let (tx, rx) = sender.framed().split();
-    Box::new(
-        rx.take(1)
-            .fold(tx, |tx, req| {
-                println!("got REQ {:?}", req);
-                tx.send(req)
-            })
-            .map(|_| {}),
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
