@@ -46,15 +46,19 @@ extern crate url;
 extern crate uuid;
 extern crate zmq;
 
+// Optional crates from `async-mio` feature
+#[cfg(feature = "async-mio")]
+extern crate mio as mio_lib;
+
 // Optional crates from `async-tokio` feature
 #[cfg(feature = "async-tokio")]
 extern crate futures;
 #[cfg(feature = "async-tokio")]
 extern crate tokio_core;
 #[cfg(feature = "async-tokio")]
-extern crate tokio_signal;
+extern crate tokio_io;
 #[cfg(feature = "async-tokio")]
-extern crate zmq_tokio;
+extern crate tokio_signal;
 
 // Actors that interact over the network.
 #[cfg(feature = "async-tokio")]

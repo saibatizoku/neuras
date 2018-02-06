@@ -178,6 +178,13 @@
 //!     let _run = run_polling_program().unwrap();
 //! }
 //! ```
+use self::errors::*;
+use super::initialize::sys_context;
+
+use std::io;
+use std::result;
+use zmq;
+
 pub mod errors {
     //! Socket Errors.
     use std::io;
@@ -190,16 +197,12 @@ pub mod errors {
     }
 }
 
-use zmq;
-
+#[cfg(feature = "async-mio")]
+#[path = "socket_mio.rs"]
+pub mod mio;
 #[cfg(feature = "async-tokio")]
-use tokio_core::reactor::Handle;
-#[cfg(feature = "async-tokio")]
-use zmq_tokio::{self, convert_into_tokio_socket};
-
-use initialize::sys_context;
-
-use self::errors::*;
+#[path = "socket_tokio.rs"]
+pub mod tokio;
 
 /// Convenient API around `zmq::Socket`
 pub struct Socket {
@@ -241,13 +244,6 @@ impl Socket {
 
 /// Socket instance methods
 impl Socket {
-    #[cfg(feature = "async-tokio")]
-    /// Return a `zmq_tokio::Socket`. Consumes `self`.
-    pub fn tokio(self, handle: &Handle) -> Result<zmq_tokio::Socket> {
-        let socket = convert_into_tokio_socket(self.inner, handle)?;
-        Ok(socket)
-    }
-
     /// Return a reference to the underlying `zmq::Socket`
     pub fn resolve(&self) -> &zmq::Socket {
         socket_resolve(&self)
@@ -286,6 +282,65 @@ impl Socket {
     }
 }
 
+/// API for socket-wrapper types.
+pub trait SocketWrapper {
+    /// Send a message.
+    ///
+    /// Due to the provided From implementations, this works for `&[u8]`, `Vec<u8>` and `&str`,
+    /// as well as on `zmq::Message` itself.
+    fn get_socket_ref(&self) -> &zmq::Socket;
+}
+
+/// API methods for sending messages with sockets.
+pub trait SocketSend: SocketWrapper {
+    /// Send a message.
+    ///
+    /// Due to the provided From implementations, this works for `&[u8]`, `Vec<u8>` and `&str`,
+    /// as well as on `zmq::Message` itself.
+    fn send<T>(&self, T, i32) -> io::Result<()>
+    where
+        T: zmq::Sendable;
+    /// Sends a multipart-message.
+    fn send_multipart<I, T>(&self, I, i32) -> io::Result<()>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<zmq::Message>;
+}
+
+/// API methods for receiving messages with sockets.
+pub trait SocketRecv: SocketWrapper {
+    /// Return true if there are more frames of a multipart message to receive.
+    fn get_rcvmore(&self) -> io::Result<bool>;
+
+    /// Receive a message into a `zmq::Message`. The length passed to `zmq_msg_recv` is the length
+    /// of the buffer.
+    fn recv(&self, &mut zmq::Message, i32) -> io::Result<()>;
+
+    /// Receive bytes into a slice. The length passed to `zmq_recv` is the length of the slice. The
+    /// return value is the number of bytes in the message, which may be larger than the length of
+    /// the slice, indicating truncation.
+    fn recv_into(&self, &mut [u8], i32) -> io::Result<usize>;
+
+    /// Receive a message into a fresh `zmq::Message`.
+    fn recv_msg(&self, i32) -> io::Result<zmq::Message>;
+
+    /// Receive a message as a byte vector.
+    fn recv_bytes(&self, i32) -> io::Result<Vec<u8>>;
+
+    /// Receive a `String` from the socket.
+    ///
+    /// If the received message is not valid UTF-8, it is returned as the original `Vec` in the `Err`
+    /// part of the inner result.
+    fn recv_string(&self, i32) -> io::Result<result::Result<String, Vec<u8>>>;
+
+    /// Receive a multipart message from the socket.
+    ///
+    /// Note that this will allocate a new vector for each message part; for many applications it
+    /// will be possible to process the different parts sequentially and reuse allocations that
+    /// way.
+    fn recv_multipart(&self, i32) -> io::Result<Vec<Vec<u8>>>;
+}
+
 // Socket flags
 bitflags! {
     /// Flags for sending/receiving `zmq::Message` on a `zmq::Socket`.
@@ -295,7 +350,7 @@ bitflags! {
     ///
     /// Default value with bits: `0`
     #[derive(Default)]
-    pub struct SocketFlags: i32 {
+    struct SocketFlags: i32 {
         const ASYNC = 1;
         const MULTIPART = 2;
         const ASYNC_MULTIPART = Self::ASYNC.bits | Self::MULTIPART.bits;

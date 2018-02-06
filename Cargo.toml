@@ -5,7 +5,8 @@ authors = ["Joaquín R <globojorro@gmail.com>"]
 
 [features]
 default = []
-async-tokio = ["futures", "tokio-core", "tokio-signal", "zmq-tokio"]
+async-mio = ["mio"]
+async-tokio = ["async-mio", "futures", "tokio-core", "tokio-io", "tokio-signal"]
 
 [dependencies]
 bitflags = "1.0"
@@ -17,10 +18,11 @@ toml = "0.4"
 uuid = { version = "0.5", features = ["serde", "v4", "v5"] }
 url = "1.5.1"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
+mio = { version = "0.6", optional = true }
 futures = { version = "0.1.14", optional = true }
 tokio-core = { version = "0.1", optional = true }
+tokio-io = { version = "0.1", optional = true }
 tokio-signal = { version = "0.1", optional = true }
-zmq-tokio = { git = "https://github.com/saibatizoku/zmq-tokio.git", branch = "saiba-dev", optional = true }
 
 [profile.release]
 lto = true
