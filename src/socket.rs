@@ -289,6 +289,9 @@ pub trait SocketWrapper {
     /// Due to the provided From implementations, this works for `&[u8]`, `Vec<u8>` and `&str`,
     /// as well as on `zmq::Message` itself.
     fn get_socket_ref(&self) -> &zmq::Socket;
+
+    /// Return true if there are more frames of a multipart message to receive.
+    fn get_rcvmore(&self) -> io::Result<bool>;
 }
 
 /// API methods for sending messages with sockets.
@@ -309,9 +312,6 @@ pub trait SocketSend: SocketWrapper {
 
 /// API methods for receiving messages with sockets.
 pub trait SocketRecv: SocketWrapper {
-    /// Return true if there are more frames of a multipart message to receive.
-    fn get_rcvmore(&self) -> io::Result<bool>;
-
     /// Receive a message into a `zmq::Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, &mut zmq::Message, i32) -> io::Result<()>;
