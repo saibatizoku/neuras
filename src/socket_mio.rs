@@ -30,7 +30,10 @@ impl<'a> PollableSocket<'a> {
 
 impl<'a> SocketWrapper for PollableSocket<'a> {
     fn get_socket_ref(&self) -> &Socket {
-        self.get_ref()
+        self.inner
+    }
+    fn get_rcvmore(&self) -> io::Result<bool> {
+        self.get_socket_ref().get_rcvmore().map_err(|e| e.into())
     }
 }
 
@@ -56,57 +59,36 @@ impl<'a> SocketSend for PollableSocket<'a> {
 }
 
 impl<'a> SocketRecv for PollableSocket<'a> {
-    /// Return true if there are more frames of a multipart message to receive.
-    fn get_rcvmore(&self) -> io::Result<bool> {
-        self.get_socket_ref().get_rcvmore().map_err(|e| e.into())
-    }
-
-    /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
-    /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
         self.get_socket_ref()
             .recv(buf, DONTWAIT | flags)
             .map_err(|e| e.into())
     }
 
-    /// Receive bytes into a slice. The length passed to `zmq_recv` is the length of the slice. The
-    /// return value is the number of bytes in the message, which may be larger than the length of
-    /// the slice, indicating truncation.
     fn recv_into(&self, buf: &mut [u8], flags: i32) -> io::Result<usize> {
         self.get_socket_ref()
             .recv_into(buf, DONTWAIT | flags)
             .map_err(|e| e.into())
     }
 
-    /// Receive a message into a fresh `Message`.
     fn recv_msg(&self, flags: i32) -> io::Result<Message> {
         self.get_socket_ref()
             .recv_msg(DONTWAIT | flags)
             .map_err(|e| e.into())
     }
 
-    /// Receive a message as a byte vector.
     fn recv_bytes(&self, flags: i32) -> io::Result<Vec<u8>> {
         self.get_socket_ref()
             .recv_bytes(DONTWAIT | flags)
             .map_err(|e| e.into())
     }
 
-    /// Receive a `String` from the socket.
-    ///
-    /// If the received message is not valid UTF-8, it is returned as the original `Vec` in the `Err`
-    /// part of the inner result.
     fn recv_string(&self, flags: i32) -> io::Result<Result<String, Vec<u8>>> {
         self.get_socket_ref()
             .recv_string(DONTWAIT | flags)
             .map_err(|e| e.into())
     }
 
-    /// Receive a multipart message from the socket.
-    ///
-    /// Note that this will allocate a new vector for each message part; for many applications it
-    /// will be possible to process the different parts sequentially and reuse allocations that
-    /// way.
     fn recv_multipart(&self, flags: i32) -> io::Result<Vec<Vec<u8>>> {
         self.get_socket_ref()
             .recv_multipart(DONTWAIT | flags)

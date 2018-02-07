@@ -202,6 +202,9 @@ impl<'a> SocketWrapper for TokioSocket<'a> {
     fn get_socket_ref(&self) -> &Socket {
         SocketWrapper::get_socket_ref(&self.inner)
     }
+    fn get_rcvmore(&self) -> io::Result<bool> {
+        SocketWrapper::get_rcvmore(&self.inner)
+    }
 }
 
 impl<'b, T> SocketWrapper for &'b T
@@ -210,6 +213,9 @@ where
 {
     fn get_socket_ref(&self) -> &Socket {
         SocketWrapper::get_socket_ref(*self)
+    }
+    fn get_rcvmore(&self) -> io::Result<bool> {
+        SocketWrapper::get_rcvmore(*self)
     }
 }
 
@@ -265,11 +271,6 @@ impl<'a> SocketSend for TokioSocket<'a> {
 }
 
 impl<'a> SocketRecv for TokioSocket<'a> {
-    /// Return true if there are more frames of a multipart message to receive.
-    fn get_rcvmore(&self) -> io::Result<bool> {
-        SocketRecv::get_rcvmore(&self.inner)
-    }
-
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
@@ -354,11 +355,6 @@ impl<'a> SocketRecv for TokioSocket<'a> {
 }
 
 impl<'a, 'b> SocketRecv for &'b TokioSocket<'a> {
-    /// Return true if there are more frames of a multipart message to receive.
-    fn get_rcvmore(&self) -> io::Result<bool> {
-        SocketRecv::get_rcvmore(*self)
-    }
-
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
@@ -404,6 +400,9 @@ impl<'a, T: SocketWrapper + 'a> SocketWrapper for PollEvented<T> {
     fn get_socket_ref(&self) -> &Socket {
         SocketWrapper::get_socket_ref(self.get_ref())
     }
+    fn get_rcvmore(&self) -> io::Result<bool> {
+        SocketWrapper::get_rcvmore(self.get_ref())
+    }
 }
 
 impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
@@ -438,11 +437,6 @@ impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
 }
 
 impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
-    /// Return true if there are more frames of a multipart message to receive.
-    fn get_rcvmore(&self) -> io::Result<bool> {
-        SocketRecv::get_rcvmore(self.get_ref())
-    }
-
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
