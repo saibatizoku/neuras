@@ -8,26 +8,25 @@ use mio_lib::unix::EventedFd;
 use mio_lib::{Evented, Poll, PollOpt, Ready, Token};
 use zmq::{Message, Sendable, Socket, DONTWAIT};
 
-/// `mio`-compatible wrapper for sockets.
+/// Pollable wrapper for sockets.
 pub struct PollableSocket<'a> {
     inner: &'a Socket,
 }
 
 impl<'a> PollableSocket<'a> {
+    /// Create a new `PollableSocket` instance.
     pub fn new(inner: &'a Socket) -> PollableSocket {
         PollableSocket { inner }
     }
 
+    /// Return a result with the `RawFd` from the underlying socket.
     pub fn as_fd(&self) -> io::Result<RawFd> {
         let fd = self.inner.get_fd()?;
         Ok(fd)
     }
-
-    pub fn get_ref(&self) -> &Socket {
-        self.inner
-    }
 }
 
+/// Implementation of the `SocketWrapper` API for pollable sockets.
 impl<'a> SocketWrapper for PollableSocket<'a> {
     fn get_socket_ref(&self) -> &Socket {
         self.inner
@@ -37,6 +36,7 @@ impl<'a> SocketWrapper for PollableSocket<'a> {
     }
 }
 
+/// Implementation of the `SocketSend` API for pollable sockets.
 impl<'a> SocketSend for PollableSocket<'a> {
     fn send<M>(&self, msg: M, flags: i32) -> io::Result<()>
     where
@@ -58,6 +58,7 @@ impl<'a> SocketSend for PollableSocket<'a> {
     }
 }
 
+/// Implementation of the `SocketRecv` API for pollable sockets.
 impl<'a> SocketRecv for PollableSocket<'a> {
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
         self.get_socket_ref()
@@ -96,6 +97,7 @@ impl<'a> SocketRecv for PollableSocket<'a> {
     }
 }
 
+/// Implementation of the external `mio::Evented` API for pollable sockets.
 impl<'a> Evented for PollableSocket<'a> {
     fn register(
         &self,
@@ -125,6 +127,7 @@ impl<'a> Evented for PollableSocket<'a> {
     }
 }
 
+/// Implementation of the external `mio::Evented` API for pollable socket references.
 impl<'a, 'b> Evented for &'b PollableSocket<'a> {
     fn register(
         &self,
@@ -154,6 +157,7 @@ impl<'a, 'b> Evented for &'b PollableSocket<'a> {
     }
 }
 
+/// Converts from a socket reference into a pollable socket.
 impl<'a> From<&'a Socket> for PollableSocket<'a> {
     fn from(socket: &'a Socket) -> Self {
         PollableSocket::new(socket)
