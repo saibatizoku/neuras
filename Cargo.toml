@@ -42,8 +42,8 @@ path = "examples/tokio-client.rs"
 required-features = ["async-tokio"]
 
 [[example]]
-name = "tokio-pair"
-path = "examples/tokio-pair.rs"
+name = "tokio-req-rep"
+path = "examples/tokio-req-rep.rs"
 required-features = ["async-tokio"]
 
 [workspace]
