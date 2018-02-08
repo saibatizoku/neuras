@@ -56,8 +56,6 @@ extern crate futures;
 #[cfg(feature = "async-tokio")]
 extern crate tokio_core;
 #[cfg(feature = "async-tokio")]
-extern crate tokio_io;
-#[cfg(feature = "async-tokio")]
 extern crate tokio_signal;
 
 // Actors that interact over the network.
