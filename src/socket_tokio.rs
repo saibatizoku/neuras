@@ -1,6 +1,10 @@
 //! `tokio`-compatibility for sockets.
 #[path = "socket_tokio_future.rs"]
 pub mod future;
+#[path = "socket_tokio_stream.rs"]
+pub mod stream;
+#[path = "socket_tokio_sink.rs"]
+pub mod sink;
 
 use self::future::{SendMessage, SendMultipartMessage};
 use self::future::{RecvMessage, RecvMultipartMessage};
