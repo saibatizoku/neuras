@@ -73,12 +73,9 @@ where
                 }
             }
             Ok(vecs) => {
-                let msgs = vecs.iter().map(|v| {
-                    v.into()
-                }).collect();
+                let msgs = vecs.iter().map(|v| v.into()).collect();
                 Ok(Async::Ready(Some(msgs)))
             }
         }
     }
 }
-

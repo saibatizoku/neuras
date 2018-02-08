@@ -50,7 +50,7 @@ fn main() {
     {
         let server_send = server.send("world-async", 0);
         let client_recv = client.recv(&mut msg, 0);
-        let server_send_client_recv = server_send.and_then(|_| { client_recv });
+        let server_send_client_recv = server_send.and_then(|_| client_recv);
         let _ = reactor.run(server_send_client_recv).unwrap();
     }
 

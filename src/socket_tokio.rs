@@ -8,8 +8,8 @@ pub mod sink;
 
 use self::future::{SendMessage, SendMultipartMessage};
 use self::future::{RecvMessage, RecvMultipartMessage};
-use self::stream::{MessageStream, MessageMultipartStream};
-use self::sink::{MessageSink, MessageMultipartSink};
+use self::stream::{MessageMultipartStream, MessageStream};
+use self::sink::{MessageMultipartSink, MessageSink};
 use super::{SocketRecv, SocketSend, SocketWrapper};
 use super::mio::PollableSocket;
 
@@ -202,8 +202,8 @@ impl<'a> SocketRecv for TokioSocket<'a> {
 
     /// Receive a `String` from the socket.
     ///
-    /// If the received message is not valid UTF-8, it is returned as the original `Vec` in the `Err`
-    /// part of the inner result.
+    /// If the received message is not valid UTF-8, it is returned as the original `Vec`
+    /// in the `Err` part of the inner result.
     fn recv_string(&self, flags: i32) -> io::Result<Result<String, Vec<u8>>> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
@@ -258,17 +258,17 @@ impl<'a, 'b> SocketRecv for &'b TokioSocket<'a> {
 
     /// Receive a `String` from the socket.
     ///
-    /// If the received message is not valid UTF-8, it is returned as the original `Vec` in the `Err`
-    /// part of the inner result.
+    /// If the received message is not valid UTF-8, it is returned as the original `Vec`
+    /// in the `Err` part of the inner result.
     fn recv_string(&self, flags: i32) -> io::Result<Result<String, Vec<u8>>> {
         SocketRecv::recv_string(*self, flags)
     }
 
     /// Receive a multipart message from the socket.
     ///
-    /// Note that this will allocate a new vector for each message part; for many applications it
-    /// will be possible to process the different parts sequentially and reuse allocations that
-    /// way.
+    /// Note that this will allocate a new vector for each message part; for many
+    /// applications it will be possible to process the different parts sequentially
+    /// and reuse allocations that way.
     fn recv_multipart(&self, flags: i32) -> io::Result<Vec<Vec<u8>>> {
         SocketRecv::recv_multipart(*self, flags)
     }
@@ -368,8 +368,8 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
 
     /// Receive a `String` from the socket.
     ///
-    /// If the received message is not valid UTF-8, it is returned as the original `Vec` in the `Err`
-    /// part of the inner result.
+    /// If the received message is not valid UTF-8, it is returned as the original `Vec`
+    /// in the `Err` part of the inner result.
     fn recv_string(&self, flags: i32) -> io::Result<Result<String, Vec<u8>>> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
