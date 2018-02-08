@@ -8,6 +8,8 @@ pub mod sink;
 
 use self::future::{SendMessage, SendMultipartMessage};
 use self::future::{RecvMessage, RecvMultipartMessage};
+use self::stream::{MessageStream, MessageMultipartStream};
+use self::sink::{MessageSink, MessageMultipartSink};
 use super::{SocketRecv, SocketSend, SocketWrapper};
 use super::mio::PollableSocket;
 
@@ -51,6 +53,26 @@ impl<'a> TokioSocket<'a> {
     /// Returns a `Future` that resolves into a `Vec<zmq::Message>`
     pub fn recv_multipart(&self, flags: i32) -> RecvMultipartMessage {
         RecvMultipartMessage::new(self, flags)
+    }
+
+    /// Returns a `Stream` of incoming messages.
+    pub fn stream(&self) -> MessageStream<Self> {
+        MessageStream::new(self)
+    }
+
+    /// Returns a `Stream` of incoming multi-part messages.
+    pub fn stream_multipart(&self) -> MessageMultipartStream<Self> {
+        MessageMultipartStream::new(self)
+    }
+
+    /// Returns a `Sink` for outgoing messages.
+    pub fn sink(&self) -> MessageSink<Self> {
+        MessageSink::new(self)
+    }
+
+    /// Returns a `Sink` for outgoing multi-part messages.
+    pub fn sink_multipart(&self) -> MessageMultipartSink<Self> {
+        MessageMultipartSink::new(self)
     }
 }
 
