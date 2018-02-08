@@ -2,7 +2,6 @@
 #[path = "socket_tokio_future.rs"]
 pub mod future;
 
-use self::future::SocketFutures;
 use self::future::{SendMessage, SendMultipartMessage};
 use self::future::{RecvMessage, RecvMultipartMessage};
 use super::{SocketRecv, SocketSend, SocketWrapper};
@@ -25,14 +24,14 @@ impl<'a> TokioSocket<'a> {
     }
 }
 
-impl<'a> SocketFutures<'a> for TokioSocket<'a> {
+impl<'a> TokioSocket<'a> {
     /// Sends a type implementing `Into<zmq::Message>` as a `Future`.
-    fn async_send<M: Into<Message>>(&self, message: M, flags: i32) -> SendMessage {
+    pub fn send<M: Into<Message>>(&self, message: M, flags: i32) -> SendMessage {
         SendMessage::new(self, message, flags)
     }
 
     /// Sends a type implementing `Into<zmq::Message>` as a `Future`.
-    fn async_send_multipart<I, M>(&self, messages: I, flags: i32) -> SendMultipartMessage
+    pub fn send_multipart<I, M>(&self, messages: I, flags: i32) -> SendMultipartMessage
     where
         I: IntoIterator<Item = M>,
         M: Into<Vec<u8>>,
@@ -41,12 +40,12 @@ impl<'a> SocketFutures<'a> for TokioSocket<'a> {
     }
 
     /// Returns a `Future` that resolves into a `zmq::Message`
-    fn async_recv<'b>(&'a self, msg: &'b mut Message, flags: i32) -> RecvMessage<'a, 'b> {
+    pub fn recv<'b>(&'a self, msg: &'b mut Message, flags: i32) -> RecvMessage<'a, 'b> {
         RecvMessage::new(self, msg, flags)
     }
 
     /// Returns a `Future` that resolves into a `Vec<zmq::Message>`
-    fn async_recv_multipart(&self, flags: i32) -> RecvMultipartMessage {
+    pub fn recv_multipart(&self, flags: i32) -> RecvMultipartMessage {
         RecvMultipartMessage::new(self, flags)
     }
 }

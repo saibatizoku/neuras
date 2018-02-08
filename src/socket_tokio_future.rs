@@ -148,23 +148,3 @@ impl<'a> Future for RecvMultipartMessage<'a> {
         }
     }
 }
-
-/// API for socket futures with tokio.
-///
-/// This trait is meant for types that will execute in asynchronous tasks.
-pub trait SocketFutures<'a> {
-    /// Sends a type implementing `Into<zmq::Message>` as a `Future`.
-    fn async_send<M: Into<Message>>(&self, message: M, flags: i32) -> SendMessage;
-
-    /// Sends a type implementing `Into<zmq::Message>` as a `Future`.
-    fn async_send_multipart<I, M>(&self, messages: I, flags: i32) -> SendMultipartMessage
-    where
-        I: IntoIterator<Item = M>,
-        M: Into<Vec<u8>>;
-
-    /// Returns a `Future` that resolves into a `zmq::Message`
-    fn async_recv<'b>(&'a self, msg: &'b mut Message, flags: i32) -> RecvMessage<'a, 'b>;
-
-    /// Returns a `Future` that resolves into a `Vec<zmq::Message>`
-    fn async_recv_multipart(&self, flags: i32) -> RecvMultipartMessage;
-}
