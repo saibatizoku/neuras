@@ -4,7 +4,6 @@ extern crate tokio_core;
 extern crate zmq;
 
 use neuras::socket::tokio::TokioSocket;
-use neuras::socket::tokio::future::SocketFutures;
 use futures::Future;
 use tokio_core::reactor::Core;
 
@@ -41,16 +40,16 @@ fn main() {
     println!("REQ-REP with the tokio reactor");
     println!("------------------------------");
     {
-        let client_send = client.async_send("hello-async", 0);
-        let server_recv = server.async_recv(&mut msg, 0);
+        let client_send = client.send("hello-async", 0);
+        let server_recv = server.recv(&mut msg, 0);
         let client_send_server_recv = client_send.and_then(|_| server_recv);
         let _ = reactor.run(client_send_server_recv).unwrap();
     }
     println!("REQ: {}", msg.as_str().unwrap());
 
     {
-        let server_send = server.async_send("world-async", 0);
-        let client_recv = client.async_recv(&mut msg, 0);
+        let server_send = server.send("world-async", 0);
+        let client_recv = client.recv(&mut msg, 0);
         let server_send_client_recv = server_send.and_then(|_| { client_recv });
         let _ = reactor.run(server_send_client_recv).unwrap();
     }
@@ -78,14 +77,14 @@ fn main() {
     println!("----------------------------------------");
     {
         let _ = req_socket.send("hello-blocking", 0).unwrap();
-        let server_recv = server.async_recv(&mut msg, 0);
+        let server_recv = server.recv(&mut msg, 0);
         let _ = reactor.run(server_recv).unwrap();
     }
 
     println!("REQ: {}", msg.as_str().unwrap());
 
     {
-        let server_send = server.async_send("world-async", 0);
+        let server_send = server.send("world-async", 0);
         let _ = reactor.run(server_send).unwrap();
         let _ = req_socket.recv(&mut msg, 0).unwrap();
     }
