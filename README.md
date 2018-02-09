@@ -1,5 +1,5 @@
-neuras - A high-level API for networking with ØMQ ("zeromq") and tokio.
-=======================================================================
+neuras - A high-level API for networking with ØMQ in Rust
+=========================================================
 
 ## About
 
@@ -16,26 +16,41 @@ ZeroMQ provides a layer of abstraction over common patterns found in network pro
 
 [ØMQ - The Guide](http://zguide.zeromq.org/page:all) offers a collection of very well thought-out examples, use cases, and the author's clear thoughts regarding concepts such as code quality, design of network infrastructure. It is the first place to go when wanting to learn ØMQ.
 
-## Installation
-
-### Requirements
+## Dependencies
 
 - [ØMQ](http://zeromq.org). Using version >= 4.0.0
 - [rust-zmq](https://github.com/erickt/rust-zmq). Using master branch on git.
 
+## Installation
 
+Add this to your `Cargo.toml`, under `[dependencies]`:
 
+```
+[dependencies]
+neuras = { git = "https://github.com/saibatizoku/neuras" }
+```
 
+Then, to `src/lib.rs`, or `src/main.rs`:
 
+```
+extern crate neuras;
 
+use neuras;
+```
 
+### Misc
 
+Here is a quick guide to [setting up zeromq with Rasbpian](RASPBIAN.md).
 
 ## Feature Wish List
 
-- [ ] Automatic handling of sockets
-- [ ] Portable thread management
+- [X] Automatic handling of sockets
+      Rust handles dropping sockets once the context goes out of scope.
+- [X] Portable thread management
+      Rust handles portable thread management.
 - [ ] Piping from parent to child threads
 - [X] Portable clocks
-- [ ] A reactor to replace `zmq_poll()`
+- [X] A reactor to replace `zmq_poll()`
+      Use `mio` for bare-metal I/O.
+      Use `tokio-core` for fast, and reliable asynchronous I/O.
 - [ ] Proper handling of `Ctrl-C`
