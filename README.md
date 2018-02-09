@@ -42,15 +42,25 @@ use neuras;
 
 Here is a quick guide to [setting up zeromq with Rasbpian](RASPBIAN.md).
 
-## Feature Wish List
+## Features
 
-- [X] Automatic handling of sockets
-      Rust handles dropping sockets once the context goes out of scope.
-- [X] Portable thread management
-      Rust handles portable thread management.
+### `default`
+
+The `default` feature uses the standard `zmq::Socket`. Use this if you have existing `zmq` code, or if you want to use sockets in blocking mode.
+
+### `async-mio`
+
+The `async-mio` feature uses `neuras::socket::mio::PollableSocket`, which implements `mio::Evented` trait. Use this if you want to use sockets with `mio::Poll`. Socket messaging is non-blocking.
+
+### `async-tokio`
+
+The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, which has methods for messaging asynchronously, using `Future`, `Stream`, and `Sink` traits. Use this if you want to use sockets with `tokio_core::reactor::Core`. Socket messaging is non-blocking.
+
+## Feature Wish List and Work-In-Progress
+
+- [X] *Automatic handling of sockets* Rust handles memory-safety and automatically enforces that lifetimes stay within the program scope. What this means for us, is that sockets will be dropped when their context goes out of scope.
+- [X] *Portable thread management* Rust handles concurrency using OS-portable threads.
+- [X] *Portable clocks* Rust offers OS-portable clocks in the standard library module `std::time`.
+- [X] *A reactor to replace `zmq_poll()`* 
 - [ ] Piping from parent to child threads
-- [X] Portable clocks
-- [X] A reactor to replace `zmq_poll()`
-      Use `mio` for bare-metal I/O.
-      Use `tokio-core` for fast, and reliable asynchronous I/O.
 - [ ] Proper handling of `Ctrl-C`
