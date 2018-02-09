@@ -23,14 +23,41 @@ ZeroMQ provides a layer of abstraction over common patterns found in network pro
 
 ## Installation
 
+### Update `Cargo.toml`
+
 Add this to your `Cargo.toml`, under `[dependencies]`:
+
+**`default`**
+The `default` feature uses the standard `zmq::Socket`. Use this if you have existing `zmq` code, or if you want to use sockets in blocking mode.
 
 ```
 [dependencies]
 neuras = { git = "https://github.com/saibatizoku/neuras" }
 ```
 
-Then, to `src/lib.rs`, or `src/main.rs`:
+#### Optional features
+
+**`async-mio`**
+
+The `async-mio` feature uses `neuras::socket::mio::PollableSocket`, which implements `mio::Evented` trait. Use this if you want to use sockets with `mio::Poll`. Socket messaging is non-blocking.
+
+```
+[dependencies.neuras]
+git = "https://github.com/saibatizoku/neuras"
+features = ["async-mio"]
+```
+
+**`async-tokio`**
+
+The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, leveraging `async-mio`, which has methods for messaging asynchronously with the `Future`, `Stream`, and `Sink` traits. Use this if you want to use sockets with `tokio_core::reactor::Core`. Socket messaging is non-blocking.
+
+```
+[dependencies.neuras]
+git = "https://github.com/saibatizoku/neuras"
+features = ["async-tokio"]
+```
+
+### Use in `src/lib.rs`, or `src/main.rs`:
 
 ```
 extern crate neuras;
@@ -38,23 +65,11 @@ extern crate neuras;
 use neuras;
 ```
 
-### Misc
+## Examples
 
-Here is a quick guide to [setting up zeromq with Rasbpian](RASPBIAN.md).
+Please see [examples/tokio-req-rep.rs](examples/tokio-req-rep.rs) for a working example of how to use blocking and non-blocking sockets within a single thread.
 
-## Features
-
-### `default`
-
-The `default` feature uses the standard `zmq::Socket`. Use this if you have existing `zmq` code, or if you want to use sockets in blocking mode.
-
-### `async-mio`
-
-The `async-mio` feature uses `neuras::socket::mio::PollableSocket`, which implements `mio::Evented` trait. Use this if you want to use sockets with `mio::Poll`. Socket messaging is non-blocking.
-
-### `async-tokio`
-
-The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, which has methods for messaging asynchronously, using `Future`, `Stream`, and `Sink` traits. Use this if you want to use sockets with `tokio_core::reactor::Core`. Socket messaging is non-blocking.
+More examples soon!
 
 ## Feature Wish List and Work-In-Progress
 
@@ -64,3 +79,7 @@ The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, which has m
 - [X] *A reactor to replace `zmq_poll()`* 
 - [ ] Piping from parent to child threads
 - [ ] Proper handling of `Ctrl-C`
+
+## Misc
+
+Here is a quick guide to [setting up zeromq with Rasbpian](RASPBIAN.md).
