@@ -2,17 +2,15 @@
 //!
 //! ```
 //! extern crate neuras;
-//! extern crate zmq;
 //!
-//! use std::thread;
-//!
-//! use neuras::{init, Socket};
 //! use neuras::actor::Actorling;
-//! use neuras::socket::socket_new_pair;
-//! use neuras::errors::*;
 //!
 //! fn main () {
 //!     let actorling = Actorling::new("inproc://test_actor");
+//!     let _ = actorling.start().unwrap();
+//!     let status = actorling.status().unwrap();
+//!     println!("status: {:?}");
+//!     let _ = actorling.start().unwrap();
 //! }
 //! ```
 //!
@@ -43,22 +41,18 @@ pub mod errors {
     }
 }
 
-use std::thread;
+use self::errors::*;
 
-use futures::{Future, Sink, Stream};
-use tokio_core::reactor::Handle;
+use std::thread;
 use uuid::{Uuid, NAMESPACE_DNS};
 use zmq;
-
-use super::socket::Socket;
-use self::errors::*;
 
 #[allow(dead_code)]
 /// A base type for actor-like entities
 pub struct Actorling {
     address: String,
     context: zmq::Context,
-    pipe: Socket,
+    pipe: zmq::Socket,
     uuid: Uuid,
 }
 
@@ -66,28 +60,17 @@ impl Actorling {
     /// Create a new `Actorling` instance with the address that it will be known for within
     /// the network.
     pub fn new(addr: &str) -> Result<Self> {
-        let context = zmq::Context::new();
-        let pipe = Socket::new(zmq::PAIR).unwrap();
-        let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
-        let _ = pipe.bind(&uuid_pipe_address(&uuid))?;
-        let actorling = Actorling {
-            address: addr.to_string(),
-            context,
-            pipe,
-            uuid,
-        };
-        Ok(actorling)
+        Actorling::new_with_context(addr, zmq::Context::new())
     }
 
     /// Create a new `Actorling` instance that shares network context with the creator.
     /// Useful for creating actors in the same process (possibly/commonly in child threads),
     /// that can talk to the creator actor (usually running on the main thread, but could be
     /// run from a child thread as well).
-    pub fn new_sibling(addr: &str, context: zmq::Context) -> Result<Self> {
+    pub fn new_with_context(addr: &str, context: zmq::Context) -> Result<Self> {
         let address = addr.to_string();
-        let pipe = Socket::new(zmq::PAIR).unwrap();
+        let pipe = context.socket(zmq::PAIR).unwrap();
         let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
-        let _ = pipe.bind(&uuid_pipe_address(&uuid))?;
         let actorling = Actorling {
             address,
             context,
@@ -106,14 +89,9 @@ impl Actorling {
 
     /// Returns the actorling's network context.
     /// Useful for spawning sockets, and for creating sibling actors (see
-    /// `Actorling::new_sibling`).
+    /// `Actorling::new_with_context`).
     pub fn context(&self) -> zmq::Context {
         self.context.clone()
-    }
-
-    /// Returns a `String` the IPC address for this `Actorling`.
-    pub fn pipe_address(&self) -> String {
-        uuid_pipe_address(&self.uuid)
     }
 
     /// Function for spawing child-threads, returning the `thread::JoinHandle`.
@@ -128,6 +106,9 @@ impl Actorling {
 
     /// Start the current actorling instance.
     pub fn start(&self) -> Result<()> {
+        // We create a new UUID that will only be known to each PAIR socket at runtime.
+        let paddr = uuid_pipe_address();
+        let _ = self.pipe.connect(&paddr)?;
         unimplemented!();
     }
 
@@ -156,7 +137,8 @@ where
     handler
 }
 
-fn uuid_pipe_address(uuid: &Uuid) -> String {
+fn uuid_pipe_address() -> String {
+    let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
     format!("inproc://{}", uuid.simple().to_string())
 }
 
@@ -171,11 +153,10 @@ mod tests {
     }
 
     #[test]
-    fn actorlings_return_pipe_address_on_start() {
+    fn actorlings_return_ok_on_start() {
         let acty = Actorling::new("inproc://my_actorling").unwrap();
-        let pipe_addr = acty.pipe_address();
-        let ep = format!("inproc://{}", acty.uuid.simple().to_string());
-        assert_eq!(pipe_addr, ep);
+        let start = acty.start();
+        assert!(start.is_ok());
     }
 
     #[test]
