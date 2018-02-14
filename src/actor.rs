@@ -183,10 +183,10 @@ impl Actorling {
     pub fn stop(&self) -> Result<()> {
         let pipe = self.pipe();
 
-        let max_wait = time::Duration::new(5, 0); // 5 second timeout
+        let max_wait = time::Duration::from_millis(200); // 200 ms timeout
         let started = time::Instant::now();
         loop {
-            match pipe.poll(zmq::POLLOUT, 50) {
+            match pipe.poll(zmq::POLLOUT, 10) {
                 Ok(_) => {
                     let _ = match pipe.send("$STOP", zmq::DONTWAIT) {
                         Err(ref e) if e == &zmq::Error::EAGAIN => {
@@ -200,8 +200,9 @@ impl Actorling {
                         }
                         Ok(_) => {
                             println!("STOP sent");
+                            let started = time::Instant::now();
                             loop {
-                                match pipe.poll(zmq::POLLIN, 50) {
+                                match pipe.poll(zmq::POLLIN, 10) {
                                     Ok(_) => {
                                         let _ = match pipe.recv_msg(zmq::DONTWAIT) {
                                             Err(ref e) if e == &zmq::Error::EAGAIN => {
@@ -210,7 +211,8 @@ impl Actorling {
                                                 if now.duration_since(started) < max_wait {
                                                     continue;
                                                 }
-                                                bail!("actor could not confirm stop command. it may be already stopped");
+                                                eprintln!("actor could not confirm stop command. it may be already stopped");
+                                                return Ok(());
                                             }
                                             Err(e) => {
                                                 println!("error receiving stop confirmation: {:?}", e);
