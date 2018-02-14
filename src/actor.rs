@@ -71,6 +71,7 @@ pub mod errors {
 use self::errors::*;
 
 use std::thread;
+use std::time;
 use uuid::{Uuid, NAMESPACE_DNS};
 use zmq;
 
@@ -96,7 +97,8 @@ impl Actorling {
     /// run from a child thread as well).
     pub fn new_with_context(addr: &str, context: zmq::Context) -> Result<Self> {
         let address = addr.to_string();
-        let pipe = context.socket(zmq::PAIR).unwrap();
+        let pipe = context.socket(zmq::PAIR)?;
+        let _ = pipe.connect("inproc://neuras.actor.pipe")?;
         let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
         let actorling = Actorling {
             address,
@@ -121,6 +123,9 @@ impl Actorling {
         self.context.clone()
     }
 
+    pub fn pipe(&self) -> &zmq::Socket {
+        &self.pipe
+    }
     /// Function for spawing child-threads, returning the `thread::JoinHandle`.
     pub fn run_thread<F, T>(&self, name: &str, callback: F) -> Result<thread::JoinHandle<T>>
     where
@@ -132,16 +137,89 @@ impl Actorling {
     }
 
     /// Start the current actorling instance.
-    pub fn start(&self) -> Result<()> {
+    pub fn start(&self) -> Result<&zmq::Socket> {
         // We create a new UUID that will only be known to each PAIR socket at runtime.
-        let paddr = uuid_pipe_address();
-        let _ = self.pipe.connect(&paddr)?;
-        unimplemented!();
+        let context = self.context();
+        let _ = run_thread("pipe", move || {
+            let pipe = context.socket(zmq::PAIR).unwrap();
+            let _ = pipe.bind("inproc://neuras.actor.pipe").unwrap();
+            let mut pollable = [pipe.as_poll_item(zmq::POLLIN)];
+            let mut msg = zmq::Message::new();
+            loop {
+                let _ = zmq::poll(&mut pollable, 500).unwrap();
+                if pollable[0].is_readable() {
+                    let _ = pipe.recv(&mut msg, 0).unwrap();
+                    match &*msg {
+                        b"PING" => {
+                            let _ = pipe.send("PONG", 0).unwrap();
+                        }
+                        b"$STOP" => {
+                            let _ = pipe.send("OK", 0).unwrap();
+                            break;
+                        }
+                        _ => {
+                            let _ = pipe.send("ERR", 0).unwrap();
+                        }
+                    }
+                }
+            }
+        })?;
+        Ok(&self.pipe)
     }
 
     /// Stops the current actorling instance.
     pub fn stop(&self) -> Result<()> {
-        unimplemented!();
+        let pipe = self.pipe();
+
+        let max_wait = time::Duration::new(5, 0); // 5 second timeout
+        let started = time::Instant::now();
+        loop {
+            match pipe.poll(zmq::POLLOUT, 50) {
+                Ok(_) => {
+                    let _ = match pipe.send("$STOP", zmq::DONTWAIT) {
+                        Err(ref e) if e == &zmq::Error::EAGAIN => {
+                            println!("socket would block when sending");
+                            let now = time::Instant::now();
+                            if now.duration_since(started) < max_wait {
+                                continue;
+                            } else {
+                                bail!("actor could not send stop command. it may be already stopped");
+                            }
+                        }
+                        Ok(_) => {
+                            println!("STOP sent");
+                            loop {
+                                match pipe.poll(zmq::POLLIN, 50) {
+                                    Ok(_) => {
+                                        let _ = match pipe.recv_msg(zmq::DONTWAIT) {
+                                            Err(ref e) if e == &zmq::Error::EAGAIN => {
+                                                //println!("socket would block receiving");
+                                                let now = time::Instant::now();
+                                                if now.duration_since(started) < max_wait {
+                                                    continue;
+                                                }
+                                                bail!("actor could not confirm stop command. it may be already stopped");
+                                            }
+                                            Err(e) => {
+                                                println!("error receiving stop confirmation: {:?}", e);
+                                                bail!(e);
+                                            }
+                                            _ => println!("stop confirmed"),
+                                        };
+                                    }
+                                    _ => bail!("pipe POLLIN error"),
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!("stopping error: {:?}", e);
+                            bail!(e);
+                        }
+                    };
+                }
+                _ => bail!("pipe POLLOUT error"),
+            }
+        }
     }
 
     /// Returns the actorling's UUID as a `String`
@@ -162,11 +240,6 @@ where
         .spawn(callback)
         .chain_err(|| "could not spawn actorling thread");
     handler
-}
-
-fn uuid_pipe_address() -> String {
-    let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
-    format!("inproc://{}", uuid.simple().to_string())
 }
 
 #[cfg(test)]
