@@ -1,16 +1,43 @@
-//! [WIP] Actors that interact over the network.
+//! Actors that interact over the network.
+//!
+//! `Actorling` entities live on the network. They are known for having a unique `address`
+//! (e.g. `tcp://127.0.0.1:5784`, `ipc://var/sockets/socket_1234`, `udp://...`, etc.) on the
+//! network, or on a local Unix-socket.
+//!
+//! An `Actorling` listens on this `æddress` for messages arriving over the network, sent by
+//! other actors.
+//!
+//! Upon receiving a message, an `Actorling` can only do one of three things:
+//!
+//! * Add new actorlings to the network
+//! * Send messages to other actors
+//! * Define what to do with the next message
+//!
+//! # Example
 //!
 //! ```
 //! extern crate neuras;
+//! extern crate zmq;
 //!
 //! use neuras::actor::Actorling;
 //!
 //! fn main () {
-//!     let actorling = Actorling::new("inproc://test_actor");
+//!     let actorling = Actorling::new("inproc://test_actor").unwrap();
 //!     let _ = actorling.start().unwrap();
-//!     let status = actorling.status().unwrap();
-//!     println!("status: {:?}");
-//!     let _ = actorling.start().unwrap();
+//!     let mut msg = zmq::Message::new();
+//!     let pipe = actorling.pipe();
+//!     {
+//!         let _ = pipe.send("PING", 0).unwrap();
+//!         let _ = pipe.recv(&mut msg, 0).unwrap();
+//!     }
+//!     let status = msg.as_str().unwrap();
+//!
+//!     println!("status: {}", &status);
+//!     assert_eq!("PONG", status);
+//!
+//!     let _ = actorling.stop().unwrap();
+//!
+//!     ::std::process::exit(0);
 //! }
 //! ```
 //!
@@ -157,6 +184,7 @@ mod tests {
         let acty = Actorling::new("inproc://my_actorling").unwrap();
         let start = acty.start();
         assert!(start.is_ok());
+        let _ = acty.stop().unwrap();
     }
 
     #[test]
