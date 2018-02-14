@@ -4,7 +4,9 @@ extern crate zmq;
 use neuras::actor::Actorling;
 use neuras::actor::errors::*;
 
-fn send_cmd<T: zmq::Sendable + ::std::fmt::Debug>(pipe: &zmq::Socket, msg: T, response: &mut zmq::Message) -> Result<()> {
+fn send_cmd<T>(pipe: &zmq::Socket, msg: T, response: &mut zmq::Message) -> Result<()>
+    where T: zmq::Sendable + ::std::fmt::Debug,
+{
     println!("command: {:?}", msg);
     let _ = pipe.send(msg, 0).unwrap();
     let _ = pipe.recv(response, 0).unwrap();
@@ -42,8 +44,9 @@ fn main () {
         assert_eq!("OK", status);
     }
 
-    // assert that trying to stop an already stopped actorling is an error.
-    assert!(actorling.stop().is_err());
+    // trying to stop a stopped actor prints out to stderr that the
+    // command was not confirmed, but returns ok.
+    assert!(actorling.stop().is_ok());
 
     ::std::process::exit(0);
 }

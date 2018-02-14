@@ -29,13 +29,24 @@
 //!     {
 //!         let _ = pipe.send("PING", 0).unwrap();
 //!         let _ = pipe.recv(&mut msg, 0).unwrap();
+//!         let status = msg.as_str().unwrap();
+//!
+//!         println!("status: {}", &status);
+//!         assert_eq!("PONG", status);
 //!     }
-//!     let status = msg.as_str().unwrap();
 //!
-//!     println!("status: {}", &status);
-//!     assert_eq!("PONG", status);
+//!     {
+//!         let _ = pipe.send("$STOP", 0).unwrap();
+//!         let _ = pipe.recv(&mut msg, 0).unwrap();
+//!         let status = msg.as_str().unwrap();
 //!
-//!     let _ = actorling.stop().unwrap();
+//!         println!("status: {}", &status);
+//!         assert_eq!("OK", status);
+//!     }
+//!
+//!     // trying to stop a stopped actorling will return ok, but print
+//!     // a message to stderr.
+//!     assert!(actorling.stop().is_ok());
 //!
 //!     ::std::process::exit(0);
 //! }
@@ -257,21 +268,20 @@ mod tests {
         let acty = Actorling::new("inproc://my_actorling").unwrap();
         let start = acty.start();
         assert!(start.is_ok());
-        let _ = acty.stop().unwrap();
     }
 
     #[test]
-    fn actorlings_return_ok_on_stop() {
+    fn actorlings_join_thread_on_stop() {
         let acty = Actorling::new("inproc://my_actorling").unwrap();
-        let _ = acty.start().unwrap();
+        let handle = acty.start().unwrap();
+        let _ = acty.stop().unwrap();
+        assert!(handle.join().is_ok());
+    }
+
+    #[test]
+    fn actorlings_return_ok_if_stopped_when_not_running() {
+        let acty = Actorling::new("inproc://my_actorling").unwrap();
         let stop = acty.stop();
         assert!(stop.is_ok());
-    }
-
-    #[test]
-    fn actorlings_return_err_if_stopped_when_not_running() {
-        let acty = Actorling::new("inproc://my_actorling").unwrap();
-        let stop = acty.stop();
-        assert!(stop.is_err());
     }
 }
