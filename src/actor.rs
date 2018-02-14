@@ -148,16 +148,16 @@ impl Actorling {
     }
 
     /// Start the current actorling instance.
-    pub fn start(&self) -> Result<&zmq::Socket> {
+    pub fn start(&self) -> Result<thread::JoinHandle<Result<()>>> {
         // We create a new UUID that will only be known to each PAIR socket at runtime.
         let context = self.context();
-        let _ = run_thread("pipe", move || {
+        let handle = run_thread("pipe", move || {
             let pipe = context.socket(zmq::PAIR).unwrap();
             let _ = pipe.bind("inproc://neuras.actor.pipe").unwrap();
             let mut pollable = [pipe.as_poll_item(zmq::POLLIN)];
             let mut msg = zmq::Message::new();
             loop {
-                let _ = zmq::poll(&mut pollable, 500).unwrap();
+                let _ = zmq::poll(&mut pollable, 10).unwrap();
                 if pollable[0].is_readable() {
                     let _ = pipe.recv(&mut msg, 0).unwrap();
                     match &*msg {
@@ -174,8 +174,9 @@ impl Actorling {
                     }
                 }
             }
+            Ok(())
         })?;
-        Ok(&self.pipe)
+        Ok(handle)
     }
 
     /// Stops the current actorling instance.
