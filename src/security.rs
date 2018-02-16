@@ -1,4 +1,4 @@
-//! Network sockets and tools for authentication, and encryption protocol for ZeroMQ.
+//! Network sockets and tools for authentication, and encryption protocol for `ZeroMQ`.
 //!
 //! The underlying code uses an implementation of
 //! [ZMTP-CURVE](https://rfc.zeromq.org/spec:25/ZMTP-CURVE),
