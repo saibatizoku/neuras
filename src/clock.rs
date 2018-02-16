@@ -62,7 +62,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 // Convert `std::time::Duration` to microseconds.
 fn duration_to_micros(d: Duration) -> i64 {
     let sec_to_micros = d.as_secs() as f64 * 1e6;
-    let nanos_to_micros = d.subsec_nanos() as f64 * 1e-3;
+    let nanos_to_micros = f64::from(d.subsec_nanos()) * 1e-3;
     let duration = sec_to_micros + nanos_to_micros;
     duration as i64
 }
@@ -70,7 +70,7 @@ fn duration_to_micros(d: Duration) -> i64 {
 // Convert `std::time::Duration` to milliseconds.
 fn duration_to_millis(d: Duration) -> i64 {
     let sec_to_millis = d.as_secs() as f64 * 1e3;
-    let nanos_to_millis = d.subsec_nanos() as f64 * 1e-6;
+    let nanos_to_millis = f64::from(d.subsec_nanos()) * 1e-6;
     let duration = sec_to_millis + nanos_to_millis;
     duration as i64
 }
