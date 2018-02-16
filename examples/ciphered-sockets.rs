@@ -34,7 +34,7 @@ fn create_cipher_pair(endpoint: &str) -> Result<(CipherSender, CipherReceiver)> 
     // Connect the sender socket to the endpoint
     println!("connecting client to {:?}", &ep);
     let sender = socket_builder.sender(zmq::PAIR, &ep)?;
-    sender.connect(&receiver.public_key())?;
+    sender.connect(receiver.public_key())?;
 
     Ok((sender, receiver))
 }

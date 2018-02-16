@@ -178,7 +178,7 @@ type FutureStream =
 type SignalInterruption = Take<FlattenStream<Box<FutureStream>>>;
 
 fn catch_sigint(handle: &Handle) -> SignalInterruption {
-    tokio_signal::ctrl_c(&handle).flatten_stream().take(1)
+    tokio_signal::ctrl_c(handle).flatten_stream().take(1)
 }
 
 fn main() {
