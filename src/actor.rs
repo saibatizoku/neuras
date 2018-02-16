@@ -303,11 +303,10 @@ where
     F: Send + 'static,
     T: Send + 'static,
 {
-    let handler = thread::Builder::new()
+    thread::Builder::new()
         .name(name.to_string())
         .spawn(callback)
-        .chain_err(|| "could not spawn actorling thread");
-    handler
+        .chain_err(|| "could not spawn actorling thread")
 }
 
 /// Try sending a `zmq::Sendable` message before the timeout expires.
