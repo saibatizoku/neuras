@@ -31,7 +31,7 @@ pub fn zmq_xpub_xsub_proxy(context: &zmq::Context, xpub: &str, xsub: &str) -> Re
     bind_socket(&backend, xsub)?;
     connect_socket(&frontend, xpub)?;
 
-    zmq::proxy(&mut frontend, &mut backend).chain_err(|| ErrorKind::Neurotic)
+    zmq::proxy(&frontend, &backend).chain_err(|| ErrorKind::Neurotic)
 }
 
 /// Returns a ZMQ Socket configured as XPUB.
