@@ -246,7 +246,7 @@ impl Socket {
 impl Socket {
     /// Return a reference to the underlying `zmq::Socket`
     pub fn resolve(&self) -> &zmq::Socket {
-        socket_resolve(&self)
+        socket_resolve(self)
     }
 
     /// Returns `true` if the endpoint is marked for binding to a socket,
@@ -273,12 +273,12 @@ impl Socket {
     /// actual endpoint bound. Useful for unbinding the
     /// socket.
     pub fn bind(&self, ep: &str) -> Result<String> {
-        socket_bind(&self, ep)
+        socket_bind(self, ep)
     }
 
     /// Connect a socket to a given endpoint
     pub fn connect(&self, ep: &str) -> Result<()> {
-        socket_connect(&self, ep)
+        socket_connect(self, ep)
     }
 }
 

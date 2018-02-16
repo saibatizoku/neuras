@@ -142,12 +142,12 @@ impl Clock {
 
     /// Returns monotonic clock in milliseconds.
     pub fn mono(&self) -> i64 {
-        clock_mono(&self)
+        clock_mono(self)
     }
 
     /// Returns monotonic clock in microseconds.
     pub fn usecs(&self) -> i64 {
-        clock_usecs(&self)
+        clock_usecs(self)
     }
 
     /// Returns monotonic clock in milliseconds.
