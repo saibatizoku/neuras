@@ -59,7 +59,6 @@ extern crate tokio_core;
 extern crate tokio_signal;
 
 // Actors that interact over the network.
-#[cfg(feature = "async-tokio")]
 pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;

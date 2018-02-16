@@ -5,7 +5,8 @@ use neuras::actor::Actorling;
 use neuras::actor::errors::*;
 
 fn send_cmd<T>(pipe: &zmq::Socket, msg: T, response: &mut zmq::Message) -> Result<()>
-    where T: zmq::Sendable + ::std::fmt::Debug,
+where
+    T: zmq::Sendable + ::std::fmt::Debug,
 {
     println!("command: {:?}", msg);
     let _ = pipe.send(msg, 0).unwrap();
@@ -14,7 +15,7 @@ fn send_cmd<T>(pipe: &zmq::Socket, msg: T, response: &mut zmq::Message) -> Resul
 }
 
 #[test]
-fn main () {
+fn main() {
     let actorling = Actorling::new("inproc://test_actor").unwrap();
     let _ = actorling.start().unwrap();
     let mut msg = zmq::Message::new();
