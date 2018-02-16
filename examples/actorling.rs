@@ -101,12 +101,9 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                 if items[0].is_readable() {
                     public.recv(&mut msg, 0)?;
                     eprintln!("public is readable");
-                    match msg.as_str() {
-                        Some(a) => {
-                            println!("ECHO {}", a);
-                            public.send(a, 0)?;
-                        }
-                        _ => {}
+                    if let Some(a) = msg.as_str() {
+                        println!("ECHO {}", a);
+                        public.send(a, 0)?;
                     }
                 } else {
                     eprintln!("public not readable");
