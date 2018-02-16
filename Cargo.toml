@@ -5,7 +5,6 @@ authors = ["Joaquín R <globojorro@gmail.com>"]
 
 [features]
 default = []
-disable = []
 async-mio = ["mio"]
 async-tokio = ["async-mio", "futures", "tokio-core", "tokio-signal"]
 
@@ -30,16 +29,11 @@ lto = true
 [[example]]
 name = "actorling"
 path = "examples/actorling.rs"
-required-features = ["async-tokio", "disable"]
+required-features = ["async-tokio"]
 
 [[example]]
 name = "ciphered-sockets"
 path = "examples/ciphered-sockets.rs"
-
-[[example]]
-name = "tokio-client"
-path = "examples/tokio-client.rs"
-required-features = ["async-tokio", "disable"]
 
 [[example]]
 name = "tokio-req-rep"
