@@ -125,11 +125,11 @@ impl<'a> SocketSend for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_write() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketSend::send(&self.inner, msg, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketSend::send(&self.inner, msg, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_write();
         }
-        return r;
+        resulting
     }
 
     fn send_multipart<I, M>(&self, iter: I, flags: i32) -> io::Result<()>
@@ -140,11 +140,11 @@ impl<'a> SocketSend for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_write() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketSend::send_multipart(&self.inner, iter, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketSend::send_multipart(&self.inner, iter, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_write();
         }
-        return r;
+        resulting
     }
 }
 
@@ -155,11 +155,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv(&self.inner, buf, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv(&self.inner, buf, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive bytes into a slice. The length passed to `zmq_recv` is the length of the slice. The
@@ -169,11 +169,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_into(&self.inner, buf, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_into(&self.inner, buf, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a message into a fresh `Message`.
@@ -181,11 +181,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_msg(&self.inner, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_msg(&self.inner, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a message as a byte vector.
@@ -193,11 +193,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_bytes(&self.inner, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_bytes(&self.inner, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a `String` from the socket.
@@ -208,11 +208,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_string(&self.inner, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_string(&self.inner, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a multipart message from the socket.
@@ -224,11 +224,11 @@ impl<'a> SocketRecv for TokioSocket<'a> {
         if let Async::NotReady = self.inner.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_multipart(&self.inner, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_multipart(&self.inner, flags);
+        if is_wouldblock(&resulting) {
             self.inner.need_read();
         }
-        return r;
+        resulting
     }
 }
 
@@ -291,11 +291,11 @@ impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
         if let Async::NotReady = self.poll_write() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketSend::send(self.get_ref(), msg, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketSend::send(self.get_ref(), msg, flags);
+        if is_wouldblock(&resulting) {
             self.need_write();
         }
-        return r;
+        resulting
     }
 
     fn send_multipart<I, M>(&self, iter: I, flags: i32) -> io::Result<()>
@@ -306,11 +306,11 @@ impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
         if let Async::NotReady = self.poll_write() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketSend::send_multipart(self.get_ref(), iter, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketSend::send_multipart(self.get_ref(), iter, flags);
+        if is_wouldblock(&resulting) {
             self.need_write();
         }
-        return r;
+        resulting
     }
 }
 
@@ -321,11 +321,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv(self.get_ref(), buf, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv(self.get_ref(), buf, flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive bytes into a slice. The length passed to `zmq_recv` is the length of the slice. The
@@ -335,11 +335,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_into(self.get_ref(), buf, flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_into(self.get_ref(), buf, flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a message into a fresh `Message`.
@@ -347,11 +347,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_msg(self.get_ref(), flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_msg(self.get_ref(), flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a message as a byte vector.
@@ -359,11 +359,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_bytes(self.get_ref(), flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_bytes(self.get_ref(), flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a `String` from the socket.
@@ -374,11 +374,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_string(self.get_ref(), flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_string(self.get_ref(), flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 
     /// Receive a multipart message from the socket.
@@ -390,11 +390,11 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
         if let Async::NotReady = self.poll_read() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
-        let r = SocketRecv::recv_multipart(self.get_ref(), flags);
-        if is_wouldblock(&r) {
+        let resulting = SocketRecv::recv_multipart(self.get_ref(), flags);
+        if is_wouldblock(&resulting) {
             self.need_read();
         }
-        return r;
+        resulting
     }
 }
 
@@ -406,8 +406,8 @@ impl<'a, 'b> From<(&'a Socket, &'b Handle)> for TokioSocket<'a> {
 }
 
 // Convenience function to check if messaging will block or not.
-fn is_wouldblock<T>(r: &io::Result<T>) -> bool {
-    match *r {
+fn is_wouldblock<T>(resulting: &io::Result<T>) -> bool {
+    match *resulting {
         Ok(_) => false,
         Err(ref e) => e.kind() == io::ErrorKind::WouldBlock,
     }

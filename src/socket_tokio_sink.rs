@@ -32,13 +32,13 @@ where
         match SocketSend::send(self.socket, item.deref(), 0) {
             Err(e) => {
                 if e.kind() == io::ErrorKind::WouldBlock {
-                    return Ok(AsyncSink::NotReady(item));
+                    Ok(AsyncSink::NotReady(item))
                 } else {
-                    return Err(e);
+                    Err(e)
                 }
             }
             Ok(_) => {
-                return Ok(AsyncSink::Ready);
+                Ok(AsyncSink::Ready)
             }
         }
     }
@@ -73,13 +73,13 @@ where
         match SocketSend::send_multipart(self.socket, &item, 0) {
             Err(e) => {
                 if e.kind() == io::ErrorKind::WouldBlock {
-                    return Ok(AsyncSink::NotReady(item));
+                    Ok(AsyncSink::NotReady(item))
                 } else {
-                    return Err(e);
+                    Err(e)
                 }
             }
             Ok(_) => {
-                return Ok(AsyncSink::Ready);
+                Ok(AsyncSink::Ready)
             }
         }
     }
