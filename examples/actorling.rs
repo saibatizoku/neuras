@@ -125,7 +125,7 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     Ok(public_thread)
 }
 
-fn control_pipe_stream(context: zmq::Context) -> Result<()> {
+fn control_pipe_stream(context: &zmq::Context) -> Result<()> {
     let mut core = Core::new().unwrap();
     let controller = context.socket(zmq::SUB).unwrap();
     controller.connect("inproc://controller").unwrap();
@@ -161,7 +161,7 @@ fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
             let public = context.socket(zmq::REQ).unwrap();
             public.connect(&addr).unwrap();
 
-            control_pipe_stream(context).unwrap();
+            control_pipe_stream(&context).unwrap();
 
             public.disconnect(&addr).unwrap();
             println!("exit: play thread");
