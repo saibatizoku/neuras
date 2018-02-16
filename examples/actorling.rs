@@ -22,7 +22,7 @@ use tokio_core::reactor::{Core, Handle};
 const POLL_TIMEOUT: i64 = 100;
 
 fn run_pipe_thread(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
-    let addr = actor.pipe_address();
+    let addr = actor.address();
     let context = actor.context();
     let pipe_thread = actor
         .run_thread("pipe", move || {
@@ -201,7 +201,7 @@ fn main() {
         .and_then(|_| {
             // create a socket to connect to the pipe thread
             let sender = actor.context().socket(zmq::PAIR)?;
-            let _ = sender.connect(&actor.pipe_address())?;
+            let _ = sender.connect(&actor.address())?;
             Ok(sender)
         })
         .and_then(|sender| {
