@@ -14,7 +14,7 @@ macro_rules! t {
     })
 }
 
-const SOCKET_ADDRESS: &'static str = "tcp://127.0.0.1:5657";
+const SOCKET_ADDRESS: &str = "tcp://127.0.0.1:5657";
 
 fn main() {
     let mut reactor = Core::new().unwrap();
@@ -24,13 +24,13 @@ fn main() {
 
     // Receiver setup
     let rep_socket = t!(ctx.socket(zmq::REP));
-    let _bind = t!(rep_socket.bind(SOCKET_ADDRESS));
+    t!(rep_socket.bind(SOCKET_ADDRESS));
     let server: TokioSocket = (&rep_socket, &handle).into();
 
     // Sender setup
     // --------------
     let req_socket = t!(ctx.socket(zmq::REQ));
-    let _connect = t!(req_socket.connect(SOCKET_ADDRESS));
+    t!(req_socket.connect(SOCKET_ADDRESS));
     let client: TokioSocket = (&req_socket, &handle).into();
 
     // We reuse a message throught
@@ -43,7 +43,7 @@ fn main() {
         let client_send = client.send("hello-async", 0);
         let server_recv = server.recv(&mut msg, 0);
         let client_send_server_recv = client_send.and_then(|_| server_recv);
-        let _ = reactor.run(client_send_server_recv).unwrap();
+        reactor.run(client_send_server_recv).unwrap();
     }
     println!("REQ: {}", msg.as_str().unwrap());
 
@@ -51,7 +51,7 @@ fn main() {
         let server_send = server.send("world-async", 0);
         let client_recv = client.recv(&mut msg, 0);
         let server_send_client_recv = server_send.and_then(|_| client_recv);
-        let _ = reactor.run(server_send_client_recv).unwrap();
+        reactor.run(server_send_client_recv).unwrap();
     }
 
     println!("REP: {}", msg.as_str().unwrap());
@@ -61,13 +61,13 @@ fn main() {
     println!("REQ-REP with standard (blocking) sockets");
     println!("----------------------------------------");
     {
-        let _ = req_socket.send("hello-blocking", 0).unwrap();
-        let _ = rep_socket.recv(&mut msg, 0).unwrap();
+        req_socket.send("hello-blocking", 0).unwrap();
+        rep_socket.recv(&mut msg, 0).unwrap();
     }
     println!("REQ: {}", msg.as_str().unwrap());
     {
-        let _ = rep_socket.send("world-blocking", 0).unwrap();
-        let _ = req_socket.recv(&mut msg, 0).unwrap();
+        rep_socket.send("world-blocking", 0).unwrap();
+        req_socket.recv(&mut msg, 0).unwrap();
     }
     println!("REP: {}", msg.as_str().unwrap());
 
@@ -76,17 +76,17 @@ fn main() {
     println!("REQ (blocking) - REP (tokio) mixed sockets");
     println!("----------------------------------------");
     {
-        let _ = req_socket.send("hello-blocking", 0).unwrap();
+        req_socket.send("hello-blocking", 0).unwrap();
         let server_recv = server.recv(&mut msg, 0);
-        let _ = reactor.run(server_recv).unwrap();
+        reactor.run(server_recv).unwrap();
     }
 
     println!("REQ: {}", msg.as_str().unwrap());
 
     {
         let server_send = server.send("world-async", 0);
-        let _ = reactor.run(server_send).unwrap();
-        let _ = req_socket.recv(&mut msg, 0).unwrap();
+        reactor.run(server_send).unwrap();
+        req_socket.recv(&mut msg, 0).unwrap();
     }
 
     println!("REP: {}", msg.as_str().unwrap());

@@ -9,20 +9,20 @@ where
     T: zmq::Sendable + ::std::fmt::Debug,
 {
     println!("command: {:?}", msg);
-    let _ = pipe.send(msg, 0).unwrap();
-    let _ = pipe.recv(response, 0).unwrap();
+    pipe.send(msg, 0).unwrap();
+    pipe.recv(response, 0).unwrap();
     Ok(())
 }
 
 #[test]
 fn main() {
     let actorling = Actorling::new("inproc://test_actor").unwrap();
-    let _ = actorling.start().unwrap();
+    actorling.start().unwrap();
     let mut msg = zmq::Message::new();
     let pipe = actorling.pipe();
 
     {
-        let _ = send_cmd(pipe, "PING", &mut msg).unwrap();
+        send_cmd(pipe, "PING", &mut msg).unwrap();
 
         let status = msg.as_str().unwrap();
         println!("response: {}", &status);
@@ -30,7 +30,7 @@ fn main() {
     }
 
     {
-        let _ = send_cmd(pipe, "NON-exisiting-CMD", &mut msg).unwrap();
+        send_cmd(pipe, "NON-exisiting-CMD", &mut msg).unwrap();
 
         let status = msg.as_str().unwrap();
         println!("response: {}", &status);
@@ -38,7 +38,7 @@ fn main() {
     }
 
     {
-        let _ = send_cmd(pipe, "$STOP", &mut msg).unwrap();
+        send_cmd(pipe, "$STOP", &mut msg).unwrap();
 
         let status = msg.as_str().unwrap();
         println!("response: {}", &status);

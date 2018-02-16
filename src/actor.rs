@@ -39,8 +39,8 @@
 //!
 //!     // For example: we send `PING`, and expect a `PONG` in return.
 //!     {
-//!         let _ = pipe.send("PING", 0).unwrap();
-//!         let _ = pipe.recv(&mut msg, 0).unwrap();
+//!         pipe.send("PING", 0).unwrap();
+//!         pipe.recv(&mut msg, 0).unwrap();
 //!         let status = msg.as_str().unwrap();
 //!
 //!         println!("status: {}", &status);
@@ -51,8 +51,8 @@
 //!     // will exit cleanly. Which means we can join it into this main thread,
 //!     // and tidy up after ourselves.
 //!     {
-//!         let _ = pipe.send("$STOP", 0).unwrap();
-//!         let _ = pipe.recv(&mut msg, 0).unwrap();
+//!         pipe.send("$STOP", 0).unwrap();
+//!         pipe.recv(&mut msg, 0).unwrap();
 //!         let status = msg.as_str().unwrap();
 //!
 //!         println!("status: {}", &status);
@@ -99,10 +99,26 @@ pub mod errors {
 
 use self::errors::*;
 
+use std::collections::VecDeque;
 use std::thread;
 use std::time;
 use uuid::{Uuid, NAMESPACE_DNS};
 use zmq;
+
+#[derive(Default)]
+pub struct Mailbox {
+    messages: VecDeque<Vec<Vec<u8>>>,
+}
+
+impl Mailbox {
+    fn push_back(&mut self, msg: Vec<Vec<u8>>) {
+        self.messages.push_back(msg)
+    }
+
+    fn pop_front(&mut self) -> Option<Vec<Vec<u8>>> {
+        self.messages.pop_front()
+    }
+}
 
 #[allow(dead_code)]
 /// A base type for actor-like entities
@@ -127,7 +143,7 @@ impl Actorling {
     pub fn new_with_context(addr: &str, context: zmq::Context) -> Result<Self> {
         let address = addr.to_string();
         let pipe = context.socket(zmq::PAIR)?;
-        let _ = pipe.connect("inproc://neuras.actor.pipe")?;
+        pipe.connect("inproc://neuras.actor.pipe")?;
         let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
         let actorling = Actorling {
             address,
@@ -169,27 +185,42 @@ impl Actorling {
     pub fn start(&self) -> Result<thread::JoinHandle<Result<()>>> {
         // We create a new UUID that will only be known to each PAIR socket at runtime.
         let context = self.context();
+        let address = self.address();
+        let mut mbox = Mailbox::default();
+
         let handle = run_thread("pipe", move || {
             let pipe = context.socket(zmq::PAIR).unwrap();
-            let _ = pipe.bind("inproc://neuras.actor.pipe").unwrap();
-            let mut pollable = [pipe.as_poll_item(zmq::POLLIN)];
+            pipe.bind("inproc://neuras.actor.pipe").unwrap();
+            let service = context.socket(zmq::PULL).unwrap();
+            service.bind(&address).unwrap();
+
+            let mut pollable = [
+                pipe.as_poll_item(zmq::POLLIN),
+                service.as_poll_item(zmq::POLLIN),
+            ];
+
             let mut msg = zmq::Message::new();
+
             loop {
-                let _ = zmq::poll(&mut pollable, 10).unwrap();
+                zmq::poll(&mut pollable, 10).unwrap();
                 if pollable[0].is_readable() {
-                    let _ = pipe.recv(&mut msg, 0).unwrap();
+                    pipe.recv(&mut msg, 0).unwrap();
                     match &*msg {
                         b"PING" => {
-                            let _ = pipe.send("PONG", 0).unwrap();
+                            pipe.send("PONG", 0).unwrap();
                         }
                         b"$STOP" => {
-                            let _ = pipe.send("OK", 0).unwrap();
+                            pipe.send("OK", 0).unwrap();
                             break;
                         }
                         _ => {
-                            let _ = pipe.send("ERR", 0).unwrap();
+                            pipe.send("ERR", 0).unwrap();
                         }
                     }
+                }
+                if pollable[1].is_readable() {
+                    let msg = service.recv_multipart(0).unwrap();
+                    mbox.push_back(msg);
                 }
             }
             Ok(())
@@ -206,14 +237,16 @@ impl Actorling {
         loop {
             match pipe.poll(zmq::POLLOUT, 10) {
                 Ok(_) => {
-                    let _ = match pipe.send("$STOP", zmq::DONTWAIT) {
+                    match pipe.send("$STOP", zmq::DONTWAIT) {
                         Err(ref e) if e == &zmq::Error::EAGAIN => {
                             println!("socket would block when sending");
                             let now = time::Instant::now();
                             if now.duration_since(started) < max_wait {
                                 continue;
                             } else {
-                                bail!("actor could not send stop command. it may be already stopped");
+                                bail!(
+                                    "actor could not send stop command. it may be already stopped"
+                                );
                             }
                         }
                         Ok(_) => {
@@ -222,7 +255,7 @@ impl Actorling {
                             loop {
                                 match pipe.poll(zmq::POLLIN, 10) {
                                     Ok(_) => {
-                                        let _ = match pipe.recv_msg(zmq::DONTWAIT) {
+                                        match pipe.recv_msg(zmq::DONTWAIT) {
                                             Err(ref e) if e == &zmq::Error::EAGAIN => {
                                                 //println!("socket would block receiving");
                                                 let now = time::Instant::now();
@@ -233,11 +266,14 @@ impl Actorling {
                                                 return Ok(());
                                             }
                                             Err(e) => {
-                                                println!("error receiving stop confirmation: {:?}", e);
+                                                println!(
+                                                    "error receiving stop confirmation: {:?}",
+                                                    e
+                                                );
                                                 bail!(e);
                                             }
                                             _ => println!("stop confirmed"),
-                                        };
+                                        }
                                     }
                                     _ => bail!("pipe POLLIN error"),
                                 }
@@ -247,7 +283,7 @@ impl Actorling {
                             println!("stopping error: {:?}", e);
                             bail!(e);
                         }
-                    };
+                    }
                 }
                 _ => bail!("pipe POLLOUT error"),
             }
@@ -274,6 +310,16 @@ where
     handler
 }
 
+/// Try sending a `zmq::Sendable` message before the timeout expires.
+pub fn polled_send<M: zmq::Sendable>(
+    socket: &zmq::Socket,
+    msg: M,
+    flags: i32,
+    timeout: i32,
+) -> Result<()> {
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,7 +341,7 @@ mod tests {
     fn actorlings_join_thread_on_stop() {
         let acty = Actorling::new("inproc://my_actorling").unwrap();
         let handle = acty.start().unwrap();
-        let _ = acty.stop().unwrap();
+        acty.stop().unwrap();
         assert!(handle.join().is_ok());
     }
 

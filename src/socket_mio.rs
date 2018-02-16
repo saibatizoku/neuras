@@ -172,7 +172,7 @@ mod tests {
     fn setup_socket() -> Socket {
         let ctx = Context::new();
         let socket = ctx.socket(zmq::PAIR).unwrap();
-        let _ = socket.set_identity(b"my_identity").unwrap();
+        socket.set_identity(b"my_identity").unwrap();
         socket
     }
 

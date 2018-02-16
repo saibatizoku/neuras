@@ -27,7 +27,7 @@
 //!     /// This initializes a global context that can be
 //!     /// used to create `inproc` connections between any
 //!     /// socket created in our program. That's a good thing.
-//!     let _ = neuras::init();
+//!     neuras::init();
 //!
 //!     println!("sender starting");
 //!
@@ -35,7 +35,7 @@
 //!     // `zmq::SocketType`. Note there is no context declaration
 //!     let sender = Socket::new(zmq::PAIR)?;
 //!     // Bind it, the usuall way.
-//!     let _ = sender.bind("inproc://socket_example")?;
+//!     sender.bind("inproc://socket_example")?;
 //!     println!("client starting");
 //!
 //!     // Create a 'client' socket, using the low-level functions
@@ -48,9 +48,9 @@
 //!     // message is sent WITHOUT a `zmq::SNDMORE` flag. This typically
 //!     // means setting flags to `0` or, `zmq::DONTWAIT` when using
 //!     // async patterns.
-//!     let _ = sender.resolve().send("hi", zmq::SNDMORE)?;
+//!     sender.resolve().send("hi", zmq::SNDMORE)?;
 //!     println!("sender sent: {:?}", "hi");
-//!     let _ = sender.resolve().send("world", 0)?;
+//!     sender.resolve().send("world", 0)?;
 //!     println!("sender sent: {:?}", "world");
 //!
 //!     // The multipart message was sent, now we receive it.
@@ -80,7 +80,7 @@
 //! }
 //!
 //! fn main () {
-//!     let _run = run_synchronous_program().unwrap();
+//!     run_synchronous_program().unwrap();
 //! }
 //! ```
 //!
@@ -106,14 +106,14 @@
 //!     // `bind` function is called.
 //!     println!("server starting");
 //!     let mut sender = Socket::new(zmq::PAIR)?;
-//!     let _ = sender.set_serverish(true);
-//!     let _ = sender.plug("inproc://socket_example")?;
+//!     sender.set_serverish(true);
+//!     sender.plug("inproc://socket_example")?;
 //!
 //!     // Use a convenience function to build a connected PAIR.
 //!     // It automatically calls the socket's `connect` function.
 //!     println!("client starting");
 //!     let client = Socket::new(zmq::PAIR)?;
-//!     let _ = client.plug("inproc://socket_example")?;
+//!     client.plug("inproc://socket_example")?;
 //!
 //!     // Get a handle to the underlying `zmq::Socket`
 //!     let sender_socket = sender.resolve();
@@ -134,10 +134,10 @@
 //!             // Sequencial, blocking calls. This example sends a multipart
 //!             // message. ZMQ will not send data until the final part of the
 //!             // message is sent with a `0` flag.
-//!             let _ = sender_socket.send("hi", zmq::SNDMORE)?;
+//!             sender_socket.send("hi", zmq::SNDMORE)?;
 //!             println!("server sent: {:?}", "hi");
 //!
-//!             let _ = sender_socket.send("world", 0)?;
+//!             sender_socket.send("world", 0)?;
 //!             println!("server sent: {:?}", "world");
 //!         }
 //!
@@ -174,8 +174,8 @@
 //! fn main () {
 //!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
 //!     /// If you don't, beware.... there be monsters here.
-//!     let _ = neuras::init();
-//!     let _run = run_polling_program().unwrap();
+//!     neuras::init();
+//!     run_polling_program().unwrap();
 //! }
 //! ```
 use self::errors::*;
@@ -262,9 +262,9 @@ impl Socket {
     /// Run `bind` or `connect` on a socket, depending on what `is_serverish()` returns.
     pub fn plug(&self, endpoint: &str) -> Result<()> {
         if self.is_serverish {
-            let _ = self.bind(endpoint)?;
+            self.bind(endpoint)?;
         } else {
-            let _ = self.connect(endpoint)?;
+            self.connect(endpoint)?;
         }
         Ok(())
     }
@@ -372,7 +372,7 @@ pub fn socket_new(socket_type: zmq::SocketType) -> Result<Socket> {
 /// Create a new `zmq::SUB` socket given an endpoint. Default action is `connect`
 pub fn socket_new_sub(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::SUB)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -380,8 +380,8 @@ pub fn socket_new_sub(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::PUB` socket given an endpoint. Default action is `bind`
 pub fn socket_new_pub(endpoint: &str) -> Result<Socket> {
     let mut socket = Socket::new(zmq::PUB)?;
-    let _ = socket.set_serverish(true);
-    let _ = socket.plug(endpoint)?;
+    socket.set_serverish(true);
+    socket.plug(endpoint)?;
     Ok(socket)
 }
 
@@ -389,7 +389,7 @@ pub fn socket_new_pub(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::REQ` socket given an endpoint. Default action is `connect`
 pub fn socket_new_req(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::REQ)?;
-    let _ = socket.plug(endpoint)?;
+    socket.plug(endpoint)?;
     Ok(socket)
 }
 
@@ -397,7 +397,7 @@ pub fn socket_new_req(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::REP` socket given an endpoint. Default action is `bind`
 pub fn socket_new_rep(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::REP)?;
-    let _ = socket_bind(&socket, endpoint)?;
+    socket_bind(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -405,7 +405,7 @@ pub fn socket_new_rep(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::DEALER` socket given an endpoint. Default action is `connect`
 pub fn socket_new_dealer(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::DEALER)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -413,7 +413,7 @@ pub fn socket_new_dealer(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::ROUTER` socket given an endpoint. Default action is `bind`
 pub fn socket_new_router(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::ROUTER)?;
-    let _ = socket_bind(&socket, endpoint)?;
+    socket_bind(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -421,7 +421,7 @@ pub fn socket_new_router(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::PUSH` socket given an endpoint. Default action is `connect`
 pub fn socket_new_push(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::PUSH)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -429,7 +429,7 @@ pub fn socket_new_push(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::PULL` socket given an endpoint. Default action is `bind`
 pub fn socket_new_pull(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::PULL)?;
-    let _ = socket_bind(&socket, endpoint)?;
+    socket_bind(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -437,7 +437,7 @@ pub fn socket_new_pull(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::XSUB` socket given an endpoint. Default action is `connect`
 pub fn socket_new_xsub(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::XSUB)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -445,7 +445,7 @@ pub fn socket_new_xsub(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::XPUB` socket given an endpoint. Default action is `bind`
 pub fn socket_new_xpub(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::XPUB)?;
-    let _ = socket_bind(&socket, endpoint)?;
+    socket_bind(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -453,7 +453,7 @@ pub fn socket_new_xpub(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::PAIR` socket given an endpoint. Default action is `connect`
 pub fn socket_new_pair(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::PAIR)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -461,7 +461,7 @@ pub fn socket_new_pair(endpoint: &str) -> Result<Socket> {
 /// Create a new `zmq::STREAM` socket given an endpoint. Default action is `connect`
 pub fn socket_new_stream(endpoint: &str) -> Result<Socket> {
     let socket = Socket::new(zmq::STREAM)?;
-    let _ = socket_connect(&socket, endpoint)?;
+    socket_connect(&socket, endpoint)?;
     Ok(socket)
 }
 
@@ -472,7 +472,7 @@ pub fn socket_resolve(socket: &Socket) -> &zmq::Socket {
 
 /// Bind a socket to a given endpoint
 pub fn socket_bind(socket: &Socket, ep: &str) -> Result<String> {
-    let _bind = socket.resolve().bind(ep)?;
+    socket.resolve().bind(ep)?;
     let endpoint = match socket.resolve().get_last_endpoint()? {
         Ok(res) => res,
         Err(_) => bail!("trouble getting last bound endpoint"),
@@ -482,7 +482,7 @@ pub fn socket_bind(socket: &Socket, ep: &str) -> Result<String> {
 
 /// Connect a socket to a given endpoint
 pub fn socket_connect(socket: &Socket, ep: &str) -> Result<()> {
-    let _bind = socket.resolve().connect(ep)?;
+    socket.resolve().connect(ep)?;
     Ok(())
 }
 

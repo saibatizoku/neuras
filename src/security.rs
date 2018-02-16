@@ -83,9 +83,9 @@ impl Into<CurveKeyPair> for KeysCertificate {
         let public_key = z85_decode(&self.public_key).unwrap();
         let mut keys = CurveKeyPair::new().unwrap();
         let mut key = [0u8; 32];
-        let _ = key.copy_from_slice(&secret_key);
+        key.copy_from_slice(&secret_key);
         keys.secret_key = key;
-        let _ = key.copy_from_slice(&public_key);
+        key.copy_from_slice(&public_key);
         keys.public_key = key;
         keys
     }
@@ -133,7 +133,7 @@ impl CipherReceiver {
     /// `set_curve_server(true)`, and setting `public_key`/`secret_key`
     /// from `self.keys`.
     pub fn bind(&self) -> Result<()> {
-        let _cipher = secure_server_socket(&self.socket, &self.keys)?;
+        secure_server_socket(&self.socket, &self.keys)?;
         self.socket
             .bind(&self.endpoint)
             .chain_err(|| ErrorKind::ReceiverBind)
@@ -210,7 +210,7 @@ impl CipherSender {
     /// the `server_key`, which is the public server key, and setting
     /// `public_key`/`secret_key` from `self.keys`.
     pub fn connect(&self, server_key: &[u8]) -> Result<()> {
-        let _cipher = secure_client_socket(&self.socket, server_key, &self.keys)?;
+        secure_client_socket(&self.socket, server_key, &self.keys)?;
         self.socket
             .connect(&self.endpoint)
             .chain_err(|| ErrorKind::SenderConnect)
@@ -330,7 +330,7 @@ public_key = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh"
     fn secure_socket_as_a_server() {
         let (server, keys) = setup_socket_n_keys(zmq::PAIR, None);
         // test function
-        let _secure = secure_server_socket(&server, &keys);
+        secure_server_socket(&server, &keys);
 
         // test that zmq socket configuration is as expected
         assert_eq!(server.is_curve_server().unwrap(), true);
@@ -349,7 +349,7 @@ public_key = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh"
         let (client, keys) = setup_socket_n_keys(zmq::PAIR, None);
         let server_key = zmq::CurveKeyPair::new().unwrap().public_key;
         // test function
-        let _secure = secure_client_socket(&client, &server_key, &keys);
+        secure_client_socket(&client, &server_key, &keys);
 
         // test that zmq socket configuration is as expected
         assert_eq!(client.is_curve_server().unwrap(), false);

@@ -23,7 +23,7 @@ fn create_cipher_pair(endpoint: &str) -> Result<(CipherSender, CipherReceiver)> 
     // Bind the receiver socket to the endpoint
     println!("binding server to {:?}", &endpoint);
     let receiver = socket_builder.receiver(zmq::PAIR, endpoint)?;
-    let _bind = receiver.bind()?;
+    receiver.bind()?;
 
     // Get the last endpoint the receiver was bound to. ZMQ sockets can be
     // bound to multiple endpoints, such as `tcp://127.0.0.1:*` which are
@@ -34,7 +34,7 @@ fn create_cipher_pair(endpoint: &str) -> Result<(CipherSender, CipherReceiver)> 
     // Connect the sender socket to the endpoint
     println!("connecting client to {:?}", &ep);
     let sender = socket_builder.sender(zmq::PAIR, &ep)?;
-    let _connect = sender.connect(&receiver.public_key())?;
+    sender.connect(&receiver.public_key())?;
 
     Ok((sender, receiver))
 }

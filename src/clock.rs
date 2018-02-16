@@ -11,7 +11,7 @@
 //! let start: i64 = clock.time().unwrap();
 //!
 //! // Sleep for a number or milliseconds.
-//! let _ = clock.sleep(1_000);
+//! clock.sleep(1_000);
 //! let delta = clock.time().unwrap() - start;
 //! assert!(delta >= 1_000);
 //!
@@ -20,7 +20,7 @@
 //! let start: i64 = clock.mono();
 //!
 //! // Sleep for a number or milliseconds.
-//! let _ = clock.sleep(2_000);
+//! clock.sleep(2_000);
 //! let delta = clock.mono() - start;
 //! assert!(delta >= 2_000);
 //!
@@ -29,7 +29,7 @@
 //! let start: i64 = clock.usecs();
 //!
 //! // Sleep for a number or milliseconds.
-//! let _ = clock.sleep(2);
+//! clock.sleep(2);
 //! let delta = clock.usecs() - start;
 //! assert!(delta >= 2_000); //results can only be approximated at this resolution.
 //!
@@ -171,7 +171,7 @@ mod tests {
     fn clock_sleep_for_valid_msecs() {
         let start = Instant::now();
         let clock = Clock::new();
-        let _ = clock.sleep(1_000);
+        clock.sleep(1_000);
         let duration = Instant::now() - start;
         assert_eq!(duration_to_millis(duration), 1_000);
     }

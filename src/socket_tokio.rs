@@ -423,7 +423,7 @@ mod tests {
         let ctx = Context::new();
         let core = Core::new().unwrap();
         let socket = ctx.socket(zmq::PAIR).unwrap();
-        let _ = socket.set_identity(b"my_identity").unwrap();
+        socket.set_identity(b"my_identity").unwrap();
         (socket, core)
     }
 

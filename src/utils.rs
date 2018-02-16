@@ -28,8 +28,8 @@ pub fn zmq_xpub_xsub_proxy(context: &zmq::Context, xpub: &str, xsub: &str) -> Re
     let mut backend = zmq_xpub(context)?;
     let mut frontend = zmq_xsub(context)?;
 
-    let _bind = bind_socket(&backend, xsub)?;
-    let _connect = connect_socket(&frontend, xpub)?;
+    bind_socket(&backend, xsub)?;
+    connect_socket(&frontend, xpub)?;
 
     zmq::proxy(&mut frontend, &mut backend).chain_err(|| ErrorKind::Neurotic)
 }

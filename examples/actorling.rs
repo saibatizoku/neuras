@@ -28,20 +28,20 @@ fn run_pipe_thread(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> 
         .run_thread("pipe", move || {
             println!("enter: pipe thread");
             let pipe = context.socket(zmq::PAIR)?;
-            let _ = pipe.bind(&addr)?;
+            pipe.bind(&addr)?;
             let controller = context.socket(zmq::PUB)?;
-            let _ = controller.bind("inproc://controller")?;
+            controller.bind("inproc://controller")?;
             let mut msg = zmq::Message::new();
             let mut items = [pipe.as_poll_item(zmq::POLLIN | zmq::POLLOUT)];
             loop {
-                let _ = zmq::poll(&mut items, POLL_TIMEOUT)?;
+                zmq::poll(&mut items, POLL_TIMEOUT)?;
                 if items[0].is_readable() {
                     eprintln!("pipe is readable");
-                    let _ = pipe.recv(&mut msg, 0)?;
+                    pipe.recv(&mut msg, 0)?;
                     match msg.as_str() {
                         Some(a) if a == "STOP" => {
                             println!("broadcast: STOP");
-                            let _ = controller.send("STOP", 0)?;
+                            controller.send("STOP", 0)?;
                             eprintln!("stop: pipe");
                             break;
                         }
@@ -71,25 +71,25 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
         .run_thread("public", move || {
             println!("enter: public thread");
             let public = context.socket(zmq::REP)?;
-            let _ = public.bind(&addr)?;
+            public.bind(&addr)?;
             let controller = context.socket(zmq::SUB)?;
-            let _ = controller.connect("inproc://controller")?;
-            let _ = controller.set_subscribe(b"")?;
+            controller.connect("inproc://controller")?;
+            controller.set_subscribe(b"")?;
             let mut msg = zmq::Message::new();
             let mut items = [
                 public.as_poll_item(zmq::POLLIN | zmq::POLLOUT),
                 controller.as_poll_item(zmq::POLLIN),
             ];
             loop {
-                let _ = zmq::poll(&mut items, POLL_TIMEOUT)?;
+                zmq::poll(&mut items, POLL_TIMEOUT)?;
                 if items[1].is_readable() {
-                    let _ = controller.recv(&mut msg, 0)?;
+                    controller.recv(&mut msg, 0)?;
                     match msg.as_str() {
                         Some(a) if a == "STOP" => {
                             eprintln!("stop: public");
-                            let _ = public.disconnect(&addr)?;
-                            let _ = controller.set_unsubscribe(b"")?;
-                            let _ = controller.disconnect("inproc://controller")?;
+                            public.disconnect(&addr)?;
+                            controller.set_unsubscribe(b"")?;
+                            controller.disconnect("inproc://controller")?;
                             break;
                         }
                         _ => {}
@@ -99,12 +99,12 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
                 }
 
                 if items[0].is_readable() {
-                    let _ = public.recv(&mut msg, 0)?;
+                    public.recv(&mut msg, 0)?;
                     eprintln!("public is readable");
                     match msg.as_str() {
                         Some(a) => {
                             println!("ECHO {}", a);
-                            let _ = public.send(a, 0)?;
+                            public.send(a, 0)?;
                         }
                         _ => {}
                     }
@@ -128,16 +128,16 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
 fn control_pipe_stream(context: zmq::Context) -> Result<()> {
     let mut core = Core::new().unwrap();
     let controller = context.socket(zmq::SUB).unwrap();
-    let _ = controller.connect("inproc://controller").unwrap();
-    let _ = controller.set_subscribe(b"").unwrap();
+    controller.connect("inproc://controller").unwrap();
+    controller.set_subscribe(b"").unwrap();
     let mut msg = zmq::Message::new();
     let control_pipe = stream::unfold(controller, |controller| {
-        let _ = controller.recv(&mut msg, 0).unwrap();
+        controller.recv(&mut msg, 0).unwrap();
         let fut = match msg.as_str() {
             Some(m) if m == "STOP" => {
                 eprintln!("stop: play");
-                let _ = controller.set_unsubscribe(b"").unwrap();
-                let _ = controller.disconnect("inproc://controller").unwrap();
+                controller.set_unsubscribe(b"").unwrap();
+                controller.disconnect("inproc://controller").unwrap();
                 return None;
             }
             Some(m) => ok::<(String, zmq::Socket), ()>((m.to_string(), controller)),
@@ -148,7 +148,7 @@ fn control_pipe_stream(context: zmq::Context) -> Result<()> {
         println!("msg: {:?}", msg);
         Ok(())
     });
-    let _ = core.run(control_pipe).unwrap();
+    core.run(control_pipe).unwrap();
     Ok(())
 }
 
@@ -159,11 +159,11 @@ fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
         .run_thread("play", move || {
             println!("enter: play thread");
             let public = context.socket(zmq::REQ).unwrap();
-            let _ = public.connect(&addr).unwrap();
+            public.connect(&addr).unwrap();
 
-            let _run_pipe = control_pipe_stream(context).unwrap();
+            control_pipe_stream(context).unwrap();
 
-            let _ = public.disconnect(&addr).unwrap();
+            public.disconnect(&addr).unwrap();
             println!("exit: play thread");
             Ok(())
         })
@@ -201,7 +201,7 @@ fn main() {
         .and_then(|_| {
             // create a socket to connect to the pipe thread
             let sender = actor.context().socket(zmq::PAIR)?;
-            let _ = sender.connect(&actor.address())?;
+            sender.connect(&actor.address())?;
             Ok(sender)
         })
         .and_then(|sender| {
@@ -212,7 +212,7 @@ fn main() {
         .for_each(|sender| {
             // Send the `STOP` message to the pipe thread.
             eprintln!("control: STOP");
-            let _ = sender.send("STOP", 0)?;
+            sender.send("STOP", 0)?;
             Ok(())
         });
 
@@ -220,7 +220,7 @@ fn main() {
     //
     // This will loop and block the main thread until the user presses
     // CTRL-C or a SIGINT is sent via the usual unix-like fashion.
-    let _ = core.run(proc_handle).unwrap();
+    core.run(proc_handle).unwrap();
 
     // Exit cleanly by joining children threads into the main thread.
     // Returns the `exitCode` for this process.
