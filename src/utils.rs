@@ -25,8 +25,8 @@ pub fn subscribe_client(subscriber: &zmq::Socket, channel: &str) -> Result<()> {
 
 /// Proxy for XPUB/XSUB services.
 pub fn zmq_xpub_xsub_proxy(context: &zmq::Context, xpub: &str, xsub: &str) -> Result<()> {
-    let mut backend = zmq_xpub(context)?;
-    let mut frontend = zmq_xsub(context)?;
+    let backend = zmq_xpub(context)?;
+    let frontend = zmq_xsub(context)?;
 
     bind_socket(&backend, xsub)?;
     connect_socket(&frontend, xpub)?;
