@@ -77,14 +77,8 @@ pub mod errors {
     use socket;
     error_chain! {
         errors {
-            AddressNotSpecified {
-                description("the actorling needs to have an addess to work")
-            }
-            NotStarted {
-                description("actorling is not started")
-            }
-            NotStopped {
-                description("unable to stop actorling")
+            ActorlingInterrupted {
+                description("actorling was interrupted")
             }
         }
         links {
