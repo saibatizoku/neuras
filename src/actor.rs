@@ -155,6 +155,12 @@ impl Actorling {
     }
 }
 
+impl Default for Actorling {
+    fn default() -> Self {
+        Self::new("").unwrap()
+    }
+}
+
 impl Actorling {
     /// Returns a `String` with the address for the Actorling.
     pub fn address(&self) -> String {
