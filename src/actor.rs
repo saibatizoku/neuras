@@ -269,6 +269,18 @@ pub fn run_blocking_poll(
     Ok(())
 }
 
+fn parse_pipe_command(pipe: &zmq::Socket, msg: &[u8]) -> Result<()> {
+    match msg {
+        b"PING" => pipe.send("PONG", 0)?,
+        b"$STOP" => {
+            pipe.send("OK", 0)?;
+            bail!("interrupted!");
+        }
+        _ => pipe.send("ERR", 0)?,
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
