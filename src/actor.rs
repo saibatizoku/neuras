@@ -102,7 +102,7 @@ use self::errors::*;
 use std::collections::VecDeque;
 use std::thread;
 use std::time;
-use uuid::{Uuid, NAMESPACE_DNS};
+use uuid::Uuid;
 use zmq;
 
 #[derive(Default)]
@@ -144,7 +144,7 @@ impl Actorling {
         let address = addr.to_string();
         let pipe = context.socket(zmq::PAIR)?;
         pipe.connect("inproc://neuras.actor.pipe")?;
-        let uuid = Uuid::new_v5(&NAMESPACE_DNS, "actorling");
+        let uuid = Uuid::new_v4();
         let actorling = Actorling {
             address,
             context,
