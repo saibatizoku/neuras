@@ -105,7 +105,8 @@ use std::time;
 use uuid::Uuid;
 use zmq;
 
-#[derive(Default)]
+/// A mailbox where every incoming message goes through.
+#[derive(Debug, Default, PartialEq)]
 pub struct Mailbox {
     messages: VecDeque<Vec<Vec<u8>>>,
 }
