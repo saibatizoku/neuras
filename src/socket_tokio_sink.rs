@@ -37,9 +37,7 @@ where
                     Err(e)
                 }
             }
-            Ok(_) => {
-                Ok(AsyncSink::Ready)
-            }
+            Ok(_) => Ok(AsyncSink::Ready),
         }
     }
 
@@ -78,9 +76,7 @@ where
                     Err(e)
                 }
             }
-            Ok(_) => {
-                Ok(AsyncSink::Ready)
-            }
+            Ok(_) => Ok(AsyncSink::Ready),
         }
     }
 
