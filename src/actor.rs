@@ -209,64 +209,9 @@ impl Actorling {
 
     /// Stops the current actorling instance.
     pub fn stop(&self) -> Result<()> {
-        let pipe = self.pipe();
-
-        let max_wait = time::Duration::from_millis(200); // 200 ms timeout
-        let started = time::Instant::now();
-        loop {
-            match pipe.poll(zmq::POLLOUT, 10) {
-                Ok(_) => {
-                    match pipe.send("$STOP", zmq::DONTWAIT) {
-                        Err(ref e) if e == &zmq::Error::EAGAIN => {
-                            println!("socket would block when sending");
-                            let now = time::Instant::now();
-                            if now.duration_since(started) < max_wait {
-                                continue;
-                            } else {
-                                bail!(
-                                    "actor could not send stop command. it may be already stopped"
-                                );
-                            }
-                        }
-                        Ok(_) => {
-                            println!("STOP sent");
-                            let started = time::Instant::now();
-                            loop {
-                                match pipe.poll(zmq::POLLIN, 10) {
-                                    Ok(_) => {
-                                        match pipe.recv_msg(zmq::DONTWAIT) {
-                                            Err(ref e) if e == &zmq::Error::EAGAIN => {
-                                                //println!("socket would block receiving");
-                                                let now = time::Instant::now();
-                                                if now.duration_since(started) < max_wait {
-                                                    continue;
-                                                }
-                                                eprintln!("actor could not confirm stop command. it may be already stopped");
-                                                return Ok(());
-                                            }
-                                            Err(e) => {
-                                                println!(
-                                                    "error receiving stop confirmation: {:?}",
-                                                    e
-                                                );
-                                                bail!(e);
-                                            }
-                                            _ => println!("stop confirmed"),
-                                        }
-                                    }
-                                    _ => bail!("pipe POLLIN error"),
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            println!("stopping error: {:?}", e);
-                            bail!(e);
-                        }
-                    }
-                }
-                _ => bail!("pipe POLLOUT error"),
-            }
-        }
+        self.pipe()
+            .send("$STOP", 0)
+            .chain_err(|| "could not send stop command")
     }
 
     /// Returns the actorling's UUID as a `String`
