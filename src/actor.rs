@@ -197,39 +197,11 @@ impl Actorling {
         let handle = run_thread("pipe", move || {
             let pipe = context.socket(zmq::PAIR).unwrap();
             pipe.bind("inproc://neuras.actor.pipe").unwrap();
+
             let service = context.socket(zmq::PULL).unwrap();
             service.bind(&address).unwrap();
 
-            let mut pollable = [
-                pipe.as_poll_item(zmq::POLLIN),
-                service.as_poll_item(zmq::POLLIN),
-            ];
-
-            let mut msg = zmq::Message::new();
-
-            loop {
-                zmq::poll(&mut pollable, 10).unwrap();
-                if pollable[0].is_readable() {
-                    pipe.recv(&mut msg, 0).unwrap();
-                    match &*msg {
-                        b"PING" => {
-                            pipe.send("PONG", 0).unwrap();
-                        }
-                        b"$STOP" => {
-                            pipe.send("OK", 0).unwrap();
-                            break;
-                        }
-                        _ => {
-                            pipe.send("ERR", 0).unwrap();
-                        }
-                    }
-                }
-                if pollable[1].is_readable() {
-                    let msg = service.recv_multipart(0).unwrap();
-                    mbox.push_back(msg);
-                }
-            }
-            Ok(())
+            run_blocking_poll(&pipe, &service, &mut mbox, 10)
         })?;
         Ok(handle)
     }
@@ -315,13 +287,45 @@ where
         .chain_err(|| "could not spawn actorling thread")
 }
 
-/// Try sending a `zmq::Sendable` message before the timeout expires.
-pub fn polled_send<M: zmq::Sendable>(
-    socket: &zmq::Socket,
-    msg: M,
-    flags: i32,
-    timeout: i32,
+pub fn run_blocking_poll(
+    pipe: &zmq::Socket,
+    service: &zmq::Socket,
+    mbox: &mut Mailbox,
+    timeout: i64,
 ) -> Result<()> {
+    let mut pollable = [
+        pipe.as_poll_item(zmq::POLLIN),
+        service.as_poll_item(zmq::POLLIN),
+    ];
+
+    let mut msg = zmq::Message::new();
+
+    loop {
+        zmq::poll(&mut pollable, timeout)?;
+        if pollable[0].is_readable() {
+            pipe.recv(&mut msg, 0)?;
+            match &*msg {
+                b"PING" => {
+                    pipe.send("PONG", 0)?;
+                }
+                b"$STOP" => {
+                    pipe.send("OK", 0)?;
+                    break;
+                }
+                _ => {
+                    pipe.send("ERR", 0)?;
+                }
+            }
+        }
+        if pollable[1].is_readable() {
+            let msg = service.recv_multipart(0).unwrap();
+            mbox.push_back(msg);
+        }
+        // read a message from the inbox
+        if let Some(next_msg) = mbox.pop_front() {
+            println!("reading {:?}", next_msg);
+        }
+    }
     Ok(())
 }
 
