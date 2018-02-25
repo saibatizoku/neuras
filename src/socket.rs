@@ -197,7 +197,6 @@ pub mod errors {
     }
 }
 
-#[cfg(feature = "async-mio")]
 #[path = "socket_mio.rs"]
 pub mod mio;
 #[cfg(feature = "async-tokio")]

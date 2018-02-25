@@ -44,11 +44,9 @@ extern crate serde_derive;
 extern crate toml;
 extern crate url;
 extern crate uuid;
-extern crate zmq;
 
-// Optional crates from `async-mio` feature
-#[cfg(feature = "async-mio")]
 extern crate mio as mio_lib;
+extern crate zmq;
 
 // Optional crates from `async-tokio` feature
 #[cfg(feature = "async-tokio")]

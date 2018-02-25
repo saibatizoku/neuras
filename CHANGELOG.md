@@ -1,4 +1,9 @@
 ## [Unreleased]
+### Added
+- Polling mechanism for multiple sockets using `mio`.
+
+### Changed
+- `mio` crate is no longer optional
 
 ## [0.1.2] - 2018-02-08
 ### Added
