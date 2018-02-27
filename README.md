@@ -57,7 +57,7 @@ use neuras;
 
 ## Examples
 
-Please see [examples/tokio-req-rep.rs](examples/tokio-req-rep.rs) for a working example of how to use blocking and non-blocking sockets within a single thread.
+Please see [examples/tokio-req-rep.rs](examples/tokio-req-rep.rs) for a working example of how to use the REQ-REP messaging pattern with a tokio reactor.
 
 More examples soon!
 
