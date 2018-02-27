@@ -330,7 +330,7 @@ public_key = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh"
     fn secure_socket_as_a_server() {
         let (server, keys) = setup_socket_n_keys(zmq::PAIR, None);
         // test function
-        secure_server_socket(&server, &keys);
+        secure_server_socket(&server, &keys).unwrap();
 
         // test that zmq socket configuration is as expected
         assert_eq!(server.is_curve_server().unwrap(), true);
@@ -349,7 +349,7 @@ public_key = "!6X7EbrYp&d7?U.0&yrcL]lVlR:*eMaEh7R0Q!bh"
         let (client, keys) = setup_socket_n_keys(zmq::PAIR, None);
         let server_key = zmq::CurveKeyPair::new().unwrap().public_key;
         // test function
-        secure_client_socket(&client, &server_key, &keys);
+        secure_client_socket(&client, &server_key, &keys).unwrap();
 
         // test that zmq socket configuration is as expected
         assert_eq!(client.is_curve_server().unwrap(), false);
