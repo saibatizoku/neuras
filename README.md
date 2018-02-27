@@ -37,19 +37,9 @@ neuras = { git = "https://github.com/saibatizoku/neuras" }
 
 #### Optional features
 
-**`async-mio`**
-
-The `async-mio` feature uses `neuras::socket::mio::PollableSocket`, which implements `mio::Evented` trait. Use this if you want to use sockets with `mio::Poll`. Socket messaging is non-blocking.
-
-```
-[dependencies.neuras]
-git = "https://github.com/saibatizoku/neuras"
-features = ["async-mio"]
-```
-
 **`async-tokio`**
 
-The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, leveraging `async-mio`, which has methods for messaging asynchronously with the `Future`, `Stream`, and `Sink` traits. Use this if you want to use sockets with `tokio_core::reactor::Core`. Socket messaging is non-blocking.
+The `async-tokio` feature uses `neuras::socket::tokio::TokioSocket`, leveraging `mio`, which has methods for messaging asynchronously with the `Future`, `Stream`, and `Sink` traits. Use this if you want to use sockets with `tokio_core::reactor::Core`. Socket messaging is non-blocking.
 
 ```
 [dependencies.neuras]
