@@ -9,7 +9,7 @@ use zmq::Message;
 
 /// A Future that sends a `Message`.
 pub struct SendMessage<'a> {
-    socket: &'a TokioSocket<'a>,
+    socket: &'a TokioSocket,
     message: Message,
     flags: i32,
 }
@@ -46,7 +46,7 @@ impl<'a> Future for SendMessage<'a> {
 
 /// A Future that sends a multi-part `Message`.
 pub struct SendMultipartMessage<'a> {
-    socket: &'a TokioSocket<'a>,
+    socket: &'a TokioSocket,
     messages: Vec<Vec<u8>>,
     flags: i32,
 }
@@ -87,7 +87,7 @@ impl<'a> Future for SendMultipartMessage<'a> {
 
 /// A Future that receives a `Message` asynchronously.
 pub struct RecvMessage<'a, 'b> {
-    socket: &'a TokioSocket<'a>,
+    socket: &'a TokioSocket,
     msg: &'b mut Message,
     flags: i32,
 }
@@ -118,7 +118,7 @@ impl<'a, 'b> Future for RecvMessage<'a, 'b> {
 
 /// A Future that receives a multi-part `Message` asynchronously.
 pub struct RecvMultipartMessage<'a> {
-    socket: &'a TokioSocket<'a>,
+    socket: &'a TokioSocket,
     flags: i32,
 }
 
