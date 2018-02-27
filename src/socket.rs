@@ -200,7 +200,7 @@ pub mod errors {
 #[path = "socket_polling.rs"]
 mod polling;
 
-pub use self::polling::PollableSocket;
+pub use self::polling::PollingSocket;
 
 #[cfg(feature = "async-tokio")]
 #[path = "socket_tokio.rs"]

@@ -1,9 +1,9 @@
 //! Non-blocking sockets for polling.
 //!
-//! `PollableSocket` implements `SocketSend`, and `SocketRecv` by sending
+//! `PollingSocket` implements `SocketSend`, and `SocketRecv` by sending
 //! the `zmq::DONTWAIT` flag, and returning `std::io::Error`.
 //!
-//! Users of `PollableSocket` must handle the case when the result is an error
+//! Users of `PollingSocket` must handle the case when the result is an error
 //! with `std::io::ErrorKind::WouldBlock`, as per-usual when dealing with
 //! non-blocking (asynchronous) code.
 //!
@@ -16,19 +16,19 @@ use std::io;
 use std::os::unix::io::RawFd;
 
 use mio_lib::Evented;
-use mio_lib::{Events, Poll, PollOpt, Ready, Token};
+use mio_lib::{Poll, PollOpt, Ready, Token};
 use mio_lib::unix::EventedFd;
 use zmq::{Message, Sendable, Socket, DONTWAIT};
 
-/// Pollable wrapper for sockets.
-pub struct PollableSocket {
+/// Socket used for polling with `mio::Poll`.
+pub struct PollingSocket {
     inner: Socket,
 }
 
-impl PollableSocket {
-    /// Create a new `PollableSocket` instance.
-    pub fn new(inner: Socket) -> PollableSocket {
-        PollableSocket { inner }
+impl PollingSocket {
+    /// Create a new `PollingSocket` instance.
+    pub fn new(inner: Socket) -> PollingSocket {
+        PollingSocket { inner }
     }
 
     /// Return a result with the `RawFd` from the underlying socket.
@@ -39,7 +39,7 @@ impl PollableSocket {
 }
 
 /// Implementation of the `SocketWrapper` API for pollable sockets.
-impl SocketWrapper for PollableSocket {
+impl SocketWrapper for PollingSocket {
     fn get_socket_ref(&self) -> &Socket {
         &self.inner
     }
@@ -49,7 +49,7 @@ impl SocketWrapper for PollableSocket {
 }
 
 /// Implementation of the `SocketSend` API for pollable sockets.
-impl SocketSend for PollableSocket {
+impl SocketSend for PollingSocket {
     fn send<M>(&self, msg: M, flags: i32) -> io::Result<()>
     where
         M: Sendable,
@@ -71,7 +71,7 @@ impl SocketSend for PollableSocket {
 }
 
 /// Implementation of the `SocketRecv` API for pollable sockets.
-impl SocketRecv for PollableSocket {
+impl SocketRecv for PollingSocket {
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
         self.get_socket_ref()
             .recv(buf, DONTWAIT | flags)
@@ -110,21 +110,21 @@ impl SocketRecv for PollableSocket {
 }
 
 /// Converts from a regular socket into a pollable socket.
-impl From<Socket> for PollableSocket {
+impl From<Socket> for PollingSocket {
     fn from(socket: Socket) -> Self {
-        PollableSocket::new(socket)
+        PollingSocket::new(socket)
     }
 }
 
 /// Converts from a pollable socket into a regular socket.
-impl Into<Socket> for PollableSocket {
+impl Into<Socket> for PollingSocket {
     fn into(self) -> Socket {
         self.inner
     }
 }
 
 /// Implementation of the external `mio::Evented` API for pollable sockets.
-impl Evented for PollableSocket {
+impl Evented for PollingSocket {
     fn register(
         &self,
         poll: &Poll,
@@ -168,14 +168,14 @@ mod tests {
     #[test]
     fn new_pollable_socket_wraps_reference_to_zmq_socket() {
         let socket = setup_socket();
-        let pollable = PollableSocket::new(socket);
+        let pollable = PollingSocket::new(socket);
         assert_eq!(pollable.inner.get_identity(), Ok(b"my_identity".to_vec()));
     }
 
     #[test]
     fn convert_from_zmq_socket_reference_to_pollable_socket() {
         let socket = setup_socket();
-        let pollable: PollableSocket = socket.into();
+        let pollable: PollingSocket = socket.into();
         assert_eq!(pollable.inner.get_identity(), Ok(b"my_identity".to_vec()));
     }
 }

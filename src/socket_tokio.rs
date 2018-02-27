@@ -11,7 +11,7 @@ use self::future::{RecvMessage, RecvMultipartMessage};
 use self::stream::{MessageMultipartStream, MessageStream};
 use self::sink::{MessageMultipartSink, MessageSink};
 use super::{SocketRecv, SocketSend, SocketWrapper};
-use super::PollableSocket;
+use super::PollingSocket;
 
 use std::io;
 use futures::Async;
@@ -20,12 +20,12 @@ use zmq::{Message, Sendable, Socket};
 
 /// `tokio`-compatible wrapper for sockets.
 pub struct TokioSocket {
-    inner: PollEvented<PollableSocket>,
+    inner: PollEvented<PollingSocket>,
 }
 
 impl TokioSocket {
     pub fn new(socket: Socket, handle: &Handle) -> io::Result<TokioSocket> {
-        let inner = PollEvented::new(PollableSocket::new(socket), handle)?;
+        let inner = PollEvented::new(PollingSocket::new(socket), handle)?;
         Ok(TokioSocket { inner })
     }
 }
