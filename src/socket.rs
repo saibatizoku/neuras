@@ -198,7 +198,10 @@ pub mod errors {
 }
 
 #[path = "socket_polling.rs"]
-pub mod mio;
+mod polling;
+
+pub use self::polling::PollableSocket;
+
 #[cfg(feature = "async-tokio")]
 #[path = "socket_tokio.rs"]
 pub mod tokio;
