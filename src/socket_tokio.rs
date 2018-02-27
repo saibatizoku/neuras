@@ -11,7 +11,7 @@ use self::future::{RecvMessage, RecvMultipartMessage};
 use self::stream::{MessageMultipartStream, MessageStream};
 use self::sink::{MessageMultipartSink, MessageSink};
 use super::{SocketRecv, SocketSend, SocketWrapper};
-use super::mio::PollableSocket;
+use super::PollableSocket;
 
 use std::io;
 use futures::Async;
