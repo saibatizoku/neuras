@@ -19,18 +19,18 @@ use tokio_core::reactor::{Handle, PollEvented};
 use zmq::{Message, Sendable, Socket};
 
 /// `tokio`-compatible wrapper for sockets.
-pub struct TokioSocket<'a> {
-    inner: PollEvented<PollableSocket<'a>>,
+pub struct TokioSocket {
+    inner: PollEvented<PollableSocket>,
 }
 
-impl<'a> TokioSocket<'a> {
-    pub fn new(socket: &'a Socket, handle: &Handle) -> io::Result<TokioSocket<'a>> {
+impl TokioSocket {
+    pub fn new(socket: Socket, handle: &Handle) -> io::Result<TokioSocket> {
         let inner = PollEvented::new(PollableSocket::new(socket), handle)?;
         Ok(TokioSocket { inner })
     }
 }
 
-impl<'a> TokioSocket<'a> {
+impl TokioSocket {
     /// Sends a type implementing `Into<zmq::Message>` as a `Future`.
     pub fn send<M: Into<Message>>(&self, message: M, flags: i32) -> SendMessage {
         SendMessage::new(self, message, flags)
@@ -46,7 +46,7 @@ impl<'a> TokioSocket<'a> {
     }
 
     /// Returns a `Future` that resolves into a `zmq::Message`
-    pub fn recv<'b>(&'a self, msg: &'b mut Message, flags: i32) -> RecvMessage<'a, 'b> {
+    pub fn recv<'a, 'b>(&'a self, msg: &'b mut Message, flags: i32) -> RecvMessage<'a, 'b> {
         RecvMessage::new(self, msg, flags)
     }
 
@@ -76,7 +76,7 @@ impl<'a> TokioSocket<'a> {
     }
 }
 
-impl<'a> SocketWrapper for TokioSocket<'a> {
+impl SocketWrapper for TokioSocket {
     fn get_socket_ref(&self) -> &Socket {
         SocketWrapper::get_socket_ref(&self.inner)
     }
@@ -117,7 +117,7 @@ where
     }
 }
 
-impl<'a> SocketSend for TokioSocket<'a> {
+impl SocketSend for TokioSocket {
     fn send<M>(&self, msg: M, flags: i32) -> io::Result<()>
     where
         M: Sendable,
@@ -148,7 +148,7 @@ impl<'a> SocketSend for TokioSocket<'a> {
     }
 }
 
-impl<'a> SocketRecv for TokioSocket<'a> {
+impl SocketRecv for TokioSocket {
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
@@ -232,7 +232,7 @@ impl<'a> SocketRecv for TokioSocket<'a> {
     }
 }
 
-impl<'a, 'b> SocketRecv for &'b TokioSocket<'a> {
+impl<'b> SocketRecv for &'b TokioSocket {
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
@@ -274,7 +274,7 @@ impl<'a, 'b> SocketRecv for &'b TokioSocket<'a> {
     }
 }
 
-impl<'a, T: SocketWrapper + 'a> SocketWrapper for PollEvented<T> {
+impl<T: SocketWrapper> SocketWrapper for PollEvented<T> {
     fn get_socket_ref(&self) -> &Socket {
         SocketWrapper::get_socket_ref(self.get_ref())
     }
@@ -283,7 +283,7 @@ impl<'a, T: SocketWrapper + 'a> SocketWrapper for PollEvented<T> {
     }
 }
 
-impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
+impl<T: SocketSend> SocketSend for PollEvented<T> {
     fn send<M>(&self, msg: M, flags: i32) -> io::Result<()>
     where
         M: Sendable,
@@ -314,7 +314,7 @@ impl<'a, T: SocketSend + 'a> SocketSend for PollEvented<T> {
     }
 }
 
-impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
+impl<T: SocketRecv> SocketRecv for PollEvented<T> {
     /// Receive a message into a `Message`. The length passed to `zmq_msg_recv` is the length
     /// of the buffer.
     fn recv(&self, buf: &mut Message, flags: i32) -> io::Result<()> {
@@ -398,8 +398,8 @@ impl<'a, T: SocketRecv + 'a> SocketRecv for PollEvented<T> {
     }
 }
 
-impl<'a, 'b> From<(&'a Socket, &'b Handle)> for TokioSocket<'a> {
-    fn from(socket_n_handle: (&'a Socket, &'b Handle)) -> Self {
+impl<'b> From<(Socket, &'b Handle)> for TokioSocket {
+    fn from(socket_n_handle: (Socket, &'b Handle)) -> Self {
         let (socket, handle) = socket_n_handle;
         TokioSocket::new(socket, handle).unwrap()
     }
@@ -431,15 +431,21 @@ mod tests {
     fn new_tokio_socket_wraps_reference_to_zmq_socket() {
         let (socket, core) = setup_socket();
         let handle = core.handle();
-        let tokio = TokioSocket::new(&socket, &handle).unwrap();
-        assert_eq!(tokio.get_socket_ref().get_identity(), socket.get_identity());
+        let tokio = TokioSocket::new(socket, &handle).unwrap();
+        assert_eq!(
+            tokio.get_socket_ref().get_identity(),
+            Ok(b"my_identity".to_vec())
+        );
     }
 
     #[test]
     fn convert_from_zmq_socket_reference_to_tokio_socket() {
         let (socket, core) = setup_socket();
         let handle = core.handle();
-        let tokio: TokioSocket = (&socket, &handle).into();
-        assert_eq!(tokio.get_socket_ref().get_identity(), socket.get_identity());
+        let tokio: TokioSocket = (socket, &handle).into();
+        assert_eq!(
+            tokio.get_socket_ref().get_identity(),
+            Ok(b"my_identity".to_vec())
+        );
     }
 }
