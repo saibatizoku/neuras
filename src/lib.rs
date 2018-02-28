@@ -41,6 +41,7 @@ extern crate chrono;
 extern crate error_chain;
 #[macro_use]
 extern crate serde_derive;
+extern crate slab;
 extern crate toml;
 extern crate url;
 extern crate uuid;
