@@ -68,7 +68,7 @@ mod initialize;
 // Messages for sockets.
 mod message;
 // Polling for sockets.
-mod poller;
+pub mod poller;
 // Proxy actor.
 mod proxy;
 // Security for socket communications.
