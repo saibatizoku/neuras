@@ -48,4 +48,8 @@ required-features = ["async-tokio"]
 name = "actorling-integration"
 path = "tests/actorling.rs"
 
+[[test]]
+name = "poller"
+path = "tests/poller.rs"
+
 [workspace]
