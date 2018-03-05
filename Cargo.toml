@@ -45,7 +45,7 @@ path = "examples/tokio-req-rep.rs"
 required-features = ["async-tokio"]
 
 [[test]]
-name = "actorling-integration"
+name = "actorling"
 path = "tests/actorling.rs"
 
 [[test]]
