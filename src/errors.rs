@@ -11,7 +11,6 @@ use std::io;
 use zmq;
 
 use super::security;
-use super::socket;
 
 error_chain! {
     errors {
@@ -27,7 +26,6 @@ error_chain! {
     }
     links {
         Security(security::errors::Error, security::errors::ErrorKind);
-        Socket(socket::errors::Error, socket::errors::ErrorKind);
     }
     foreign_links {
         Io(io::Error);
