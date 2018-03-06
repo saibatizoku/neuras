@@ -42,18 +42,11 @@ pub enum ActorlingError {
 /// A mailbox where every incoming message goes through.
 #[derive(Debug, Default, PartialEq)]
 pub struct Mailbox {
-    messages: VecDeque<Vec<Vec<u8>>>,
+    inbox: VecDeque<Vec<Vec<u8>>>,
+    outbox: VecDeque<PipeCommand>,
 }
 
-impl Mailbox {
-    fn push_back(&mut self, msg: Vec<Vec<u8>>) {
-        self.messages.push_back(msg)
-    }
-
-    fn pop_front(&mut self) -> Option<Vec<Vec<u8>>> {
-        self.messages.pop_front()
-    }
-}
+impl Mailbox {}
 
 #[allow(dead_code)]
 /// A base type for actor-like entities
