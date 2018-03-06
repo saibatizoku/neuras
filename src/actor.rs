@@ -14,28 +14,7 @@
 //! * Define what to do with the next message
 //!
 //!
-pub mod errors {
-    //! Actorling Errors.
-    use std::io;
-    use zmq;
-    use socket;
-    error_chain! {
-        errors {
-            ActorlingInterrupted {
-                description("actorling was interrupted")
-            }
-        }
-        links {
-            Socket(socket::errors::Error, socket::errors::ErrorKind);
-        }
-        foreign_links {
-            Io(io::Error);
-            Zmq(zmq::Error);
-        }
-    }
-}
 
-use self::errors::*;
 
 use std::collections::VecDeque;
 use std::thread;
