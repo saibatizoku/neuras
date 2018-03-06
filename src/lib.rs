@@ -5,33 +5,6 @@
 //! as suggested by
 //! "[Features of a Higher-Level API](http://zguide.zeromq.org/page:all#toc74)",
 //! by using tokio's reactor and tools.
-//!
-//!
-//! ```
-//! extern crate neuras;
-//!
-//! use neuras::{init, Socket};
-//!
-//! const PAIR_ENDPOINT: &str = "inproc://push";
-//!
-//! fn main () {
-//!     /// RUN THIS ALWAYS FIRST AND ON THE MAIN THREAD.
-//!     /// If you don't, beware.... there be monsters here.
-//!     neuras::init();
-//!
-//!     let push = Socket::new_push(PAIR_ENDPOINT).unwrap();
-//!
-//!     let pull = Socket::new_pull(PAIR_ENDPOINT).unwrap();
-//!
-//!     // push.send("hi").unwrap();
-//!     // let msg_from_push = pull.recv().unwrap();
-//!     // println!("{}", &msg_from_push);
-//!
-//!     // pull.send("hi").unwrap();
-//!     // let msg_from_pull = push.recv().unwrap();
-//!     // println!("{}", &msg_from_pull);
-//! }
-//! ```
 #![recursion_limit = "1024"]
 
 #[macro_use]
