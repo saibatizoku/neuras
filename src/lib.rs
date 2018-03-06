@@ -40,6 +40,8 @@ extern crate chrono;
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
+extern crate failure;
+#[macro_use]
 extern crate serde_derive;
 extern crate slab;
 extern crate toml;
