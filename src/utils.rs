@@ -1,5 +1,8 @@
 //! Functions for easy handling of ZMQ sockets, services, and enpoints.
+use std::io;
+use std::result;
 use std::str::FromStr;
+use std::thread;
 
 use url::Url;
 use zmq;
@@ -92,6 +95,18 @@ pub fn connect_socket(client: &zmq::Socket, addr: &str) -> Result<()> {
         Ok(_) => client.connect(addr).chain_err(|| ErrorKind::Neurotic),
         Err(_) => Err(ErrorKind::AddressParse.into()),
     }
+}
+
+/// Function for spawing child-threads, returning the `thread::JoinHandle`.
+pub fn run_named_thread<F, T>(name: &str, callback: F) -> result::Result<thread::JoinHandle<T>, io::Error>
+where
+    F: FnOnce() -> T,
+    F: Send + 'static,
+    T: Send + 'static,
+{
+    thread::Builder::new()
+        .name(name.to_string())
+        .spawn(callback)
 }
 
 #[cfg(test)]
