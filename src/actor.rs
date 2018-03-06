@@ -13,62 +13,6 @@
 //! * Send messages to other actors
 //! * Define what to do with the next message
 //!
-//! # Example
-//!
-//! ```
-//! extern crate neuras;
-//! extern crate zmq;
-//!
-//! use neuras::actor::Actorling;
-//!
-//! fn main () {
-//!     // Initialize a re-usable message and our actor,
-//!     // which will be listening on "tcp://127.0.0.1:11227".
-//!     let mut msg = zmq::Message::new();
-//!     let actorling = Actorling::new("tcp://127.0.0.1:11227").unwrap();
-//!
-//!     // Starting the actor returns the `std::thread::JoinHandle<_>`
-//!     // for the thread where all the actual I/O is happening.
-//!     let thread_handle = actorling.start().unwrap();
-//!
-//!     // Get a reference to the pipe connecting to the child-thread.
-//!     let pipe = actorling.pipe();
-//!
-//!     // Now we can go crazy by sending messages from the actor into
-//!     // the child-thread...
-//!
-//!     // For example: we send `PING`, and expect a `PONG` in return.
-//!     {
-//!         pipe.send("PING", 0).unwrap();
-//!         pipe.recv(&mut msg, 0).unwrap();
-//!         let status = msg.as_str().unwrap();
-//!
-//!         println!("status: {}", &status);
-//!         assert_eq!("PONG", status);
-//!     }
-//!
-//!     // or, we send `$STOP` and expect `OK`, meaning the child-thread
-//!     // will exit cleanly. Which means we can join it into this main thread,
-//!     // and tidy up after ourselves.
-//!     {
-//!         pipe.send("$STOP", 0).unwrap();
-//!         pipe.recv(&mut msg, 0).unwrap();
-//!         let status = msg.as_str().unwrap();
-//!
-//!         println!("status: {}", &status);
-//!         assert_eq!("OK", status);
-//!     }
-//!
-//!     // The child-thread joins `Ok`.
-//!     assert!(thread_handle.join().is_ok());
-//!
-//!     // trying to stop a stopped actorling will return ok, but print
-//!     // a message to stderr.
-//!     assert!(actorling.stop().is_ok());
-//!
-//!     ::std::process::exit(0);
-//! }
-//! ```
 //!
 pub mod errors {
     //! Actorling Errors.
