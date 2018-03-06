@@ -73,8 +73,6 @@ mod message;
 pub mod poller;
 // Proxy actor.
 mod proxy;
-// Security for socket communications.
-pub mod security;
 // Sockets for networking.
 pub mod socket;
 // Useful utilities to deal with ZMQ.

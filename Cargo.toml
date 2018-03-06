@@ -37,10 +37,6 @@ path = "examples/actorling.rs"
 required-features = ["async-tokio"]
 
 [[example]]
-name = "ciphered-sockets"
-path = "examples/ciphered-sockets.rs"
-
-[[example]]
 name = "tokio-req-rep"
 path = "examples/tokio-req-rep.rs"
 required-features = ["async-tokio"]
