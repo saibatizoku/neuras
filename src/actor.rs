@@ -16,11 +16,28 @@
 //!
 
 
+use super::socket::{PollingSocket, SocketRecv, SocketWrapper};
+use super::utils::run_named_thread;
+
+use std::io;
 use std::collections::VecDeque;
 use std::thread;
-use std::time;
+use failure::Error;
 use uuid::Uuid;
 use zmq;
+
+const PIPE_ADDR: &str = "inproc://neuras.actor.pipe";
+
+/// Actorling Errors.
+#[derive(Debug, Fail)]
+pub enum ActorlingError {
+    #[fail(display = "actorling was interrupted")]
+    Interrupted,
+    #[fail(display = "invalid command")]
+    InvalidCommand,
+    #[fail(display = "{}", _0)]
+    SocketSend(#[cause] zmq::Error),
+}
 
 /// A mailbox where every incoming message goes through.
 #[derive(Debug, Default, PartialEq)]
@@ -50,7 +67,7 @@ pub struct Actorling {
 impl Actorling {
     /// Create a new `Actorling` instance with the address that it will be known for within
     /// the network.
-    pub fn new(addr: &str) -> Result<Self> {
+    pub fn new(addr: &str) -> Result<Self, Error> {
         Actorling::new_with_context(addr, zmq::Context::new())
     }
 
@@ -58,10 +75,10 @@ impl Actorling {
     /// Useful for creating actors in the same process (possibly/commonly in child threads),
     /// that can talk to the creator actor (usually running on the main thread, but could be
     /// run from a child thread as well).
-    pub fn new_with_context(addr: &str, context: zmq::Context) -> Result<Self> {
+    pub fn new_with_context(addr: &str, context: zmq::Context) -> Result<Self, Error> {
         let address = addr.to_string();
         let pipe = context.socket(zmq::PAIR)?;
-        pipe.connect("inproc://neuras.actor.pipe")?;
+        pipe.connect(PIPE_ADDR)?;
         let uuid = Uuid::new_v4();
         let actorling = Actorling {
             address,
@@ -92,43 +109,59 @@ impl Actorling {
         self.context.clone()
     }
 
+    /// Return a reference to the underlying pipe socket.
     pub fn pipe(&self) -> &zmq::Socket {
         &self.pipe
     }
-    /// Function for spawing child-threads, returning the `thread::JoinHandle`.
-    pub fn run_thread<F, T>(&self, name: &str, callback: F) -> Result<thread::JoinHandle<T>>
-    where
-        F: FnOnce() -> T,
-        F: Send + 'static,
-        T: Send + 'static,
-    {
-        run_thread(name, callback)
+
+    /// Return a reference to the underlying pipe socket.
+    pub fn pollable_pipe(self) -> PollingSocket {
+        PollingSocket::new(self.pipe)
     }
 
     /// Start the current actorling instance.
-    pub fn start(&self) -> Result<thread::JoinHandle<Result<()>>> {
+    pub fn start(&self) -> Result<thread::JoinHandle<Result<(), Error>>, io::Error> {
         // We create a new UUID that will only be known to each PAIR socket at runtime.
         let context = self.context();
         let address = self.address();
         let mut mbox = Mailbox::default();
 
-        let handle = run_thread("pipe", move || {
-            let pipe = context.socket(zmq::PAIR).unwrap();
-            pipe.bind("inproc://neuras.actor.pipe").unwrap();
+        run_named_thread("pipe", move || {
+            let pipe = context.socket(zmq::PAIR)?;
+            pipe.bind(PIPE_ADDR)?;
 
-            let service = context.socket(zmq::PULL).unwrap();
-            service.bind(&address).unwrap();
+            let service = context.socket(zmq::PULL)?;
+            service.bind(&address)?;
+            let pub_addr = service
+                .get_last_endpoint()?
+                .expect("unparsable actor endpoint");
+            pipe.send(&pub_addr, 0)?;
 
-            run_blocking_poll(&pipe, &service, &mut mbox, 10)
-        })?;
-        Ok(handle)
+            poll_zmq_actor(pipe, service, &mut mbox, 10)
+        })
     }
 
-    /// Stops the current actorling instance.
-    pub fn stop(&self) -> Result<()> {
+    /// Stop the current actorling instance.
+    pub fn stop(&self) -> Result<(), zmq::Error> {
         self.pipe()
             .send("$STOP", 0)
-            .chain_err(|| "could not send stop command")
+    }
+
+    pub fn pop(&self) -> Result<Option<Vec<zmq::Message>>, Error> {
+        self.pipe().send("$POP", 0)?;
+        let mut msgs = Vec::<zmq::Message>::new();
+        let msg = self.pipe().recv_msg(0)?;
+        match &*msg {
+            b"$NONE" => Ok(None),
+            _ => {
+                msgs.push(msg);
+                while self.pipe().get_rcvmore()? {
+                    let msg = self.pipe().recv_msg(0)?;
+                    msgs.push(msg)
+                }
+                Ok(Some(msgs))
+            }
+        }
     }
 
     /// Returns the actorling's UUID as a `String`
@@ -137,28 +170,27 @@ impl Actorling {
     }
 }
 
-/// Function for spawing child-threads, returning the `thread::JoinHandle`.
-pub fn run_thread<F, T>(name: &str, callback: F) -> Result<thread::JoinHandle<T>>
-where
-    F: FnOnce() -> T,
-    F: Send + 'static,
-    T: Send + 'static,
-{
-    thread::Builder::new()
-        .name(name.to_string())
-        .spawn(callback)
-        .chain_err(|| "could not spawn actorling thread")
+pub fn run_poll_zmq(items: &[(&zmq::Socket, zmq::PollEvents)]) -> Result<(), Error> {
+    let mut pollable = vec![];
+    let mut sockets = vec![];
+    for &(socket, events) in items {
+        pollable.push(socket.as_poll_item(events));
+        sockets.push(socket);
+    }
+    Ok(())
 }
 
-pub fn run_blocking_poll(
-    pipe: &zmq::Socket,
-    service: &zmq::Socket,
+pub fn poll_zmq_actor(
+    pipe: zmq::Socket,
+    service: zmq::Socket,
     mbox: &mut Mailbox,
     timeout: i64,
-) -> Result<()> {
+) -> Result<(), Error> {
+    let p = PollingSocket::new(pipe);
+    let s = PollingSocket::new(service);
     let mut pollable = [
-        pipe.as_poll_item(zmq::POLLIN),
-        service.as_poll_item(zmq::POLLIN),
+        p.get_socket_ref().as_poll_item(zmq::POLLIN),
+        s.get_socket_ref().as_poll_item(zmq::POLLIN),
     ];
 
     let mut msg = zmq::Message::new();
@@ -166,40 +198,72 @@ pub fn run_blocking_poll(
     loop {
         zmq::poll(&mut pollable, timeout)?;
         if pollable[0].is_readable() {
-            pipe.recv(&mut msg, 0)?;
-            match &*msg {
-                b"PING" => {
-                    pipe.send("PONG", 0)?;
+            if let Err(e) = p.recv(&mut msg, 0) {
+                match e.kind() {
+                    io::ErrorKind::WouldBlock => continue,
+                    _ => bail!("actor pipe could not be read"),
                 }
-                b"$STOP" => {
-                    pipe.send("OK", 0)?;
-                    break;
+            };
+
+            let cmd = parse_pipe_command(&*msg)?;
+            println!("command: {:?}", cmd);
+
+            if let Err(e) = execute_command(p.get_socket_ref(), &cmd) {
+                match e {
+                    ActorlingError::Interrupted => break,
+                    ActorlingError::InvalidCommand => continue,
+                    _ => bail!(e),
                 }
-                _ => {
-                    pipe.send("ERR", 0)?;
-                }
-            }
+            };
         }
         if pollable[1].is_readable() {
-            let msg = service.recv_multipart(0).unwrap();
-            mbox.push_back(msg);
-        }
-        // read a message from the inbox
-        if let Some(next_msg) = mbox.pop_front() {
-            println!("reading {:?}", next_msg);
+            loop {
+                match s.recv_multipart(0) {
+                    Ok(msg) => mbox.inbox.push_back(msg),
+                    Err(e) => match e.kind() {
+                        io::ErrorKind::WouldBlock => break,
+                        _ => bail!("actor service could not be read"),
+                    },
+                }
+            }
         }
     }
     Ok(())
 }
 
-fn parse_pipe_command(pipe: &zmq::Socket, msg: &[u8]) -> Result<()> {
-    match msg {
-        b"PING" => pipe.send("PONG", 0)?,
-        b"$STOP" => {
-            pipe.send("OK", 0)?;
-            bail!("interrupted!");
+#[derive(Debug, PartialEq)]
+enum PipeCommand {
+    Interrupt,
+    Invalid,
+    Send(&'static str),
+}
+
+fn parse_pipe_command(msg: &[u8]) -> Result<PipeCommand, Error> {
+    let cmd = match msg {
+        b"$PING" => PipeCommand::Send("$PONG"),
+        b"$STOP" => PipeCommand::Interrupt,
+        _ => PipeCommand::Invalid,
+    };
+    Ok(cmd)
+}
+
+fn execute_command(pipe: &zmq::Socket, cmd: &PipeCommand) -> Result<(), ActorlingError> {
+    match *cmd {
+        PipeCommand::Send(message) => pipe.send(message, 0).map_err(|e| {
+            ActorlingError::SocketSend(e)
+        })?,
+        PipeCommand::Interrupt => {
+            pipe.send("$STOPPING", 0).map_err(|e| {
+                ActorlingError::SocketSend(e)
+            })?;
+            return Err(ActorlingError::Interrupted);
         }
-        _ => pipe.send("ERR", 0)?,
+        PipeCommand::Invalid => {
+            pipe.send("$WONTDO", 0).map_err(|e| {
+                ActorlingError::SocketSend(e)
+            })?;
+            return Err(ActorlingError::InvalidCommand);
+        }
     }
     Ok(())
 }
