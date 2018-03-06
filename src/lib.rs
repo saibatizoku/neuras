@@ -38,11 +38,7 @@
 extern crate bitflags;
 extern crate chrono;
 #[macro_use]
-extern crate error_chain;
-#[macro_use]
 extern crate failure;
-#[macro_use]
-extern crate serde_derive;
 extern crate slab;
 extern crate toml;
 extern crate url;
@@ -63,8 +59,6 @@ extern crate tokio_signal;
 pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;
-// Crate-wide error chain.
-pub mod errors;
 // Library initialization scheme.
 mod initialize;
 // Messages for sockets.
@@ -78,7 +72,6 @@ pub mod socket;
 // Useful utilities to deal with ZMQ.
 pub mod utils;
 
-pub use initialize::init;
 // Convenient API type for dealing with clocks and delays.
 pub use clock::Clock;
 pub use socket::Socket;

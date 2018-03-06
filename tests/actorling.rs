@@ -1,17 +1,18 @@
+extern crate failure;
 extern crate neuras;
 extern crate zmq;
 
+use failure::Error;
 use neuras::actor::Actorling;
-use neuras::actor::errors::*;
 use zmq::{Message, Sendable, Socket};
 
-fn send_cmd<T>(pipe: &Socket, msg: T, response: &mut Message) -> Result<()>
+fn send_cmd<T>(pipe: &Socket, msg: T, response: &mut Message) -> Result<(), Error>
 where
     T: Sendable + ::std::fmt::Debug,
 {
     println!("command: {:?}", msg);
-    pipe.send(msg, 0).unwrap();
-    pipe.recv(response, 0).unwrap();
+    pipe.send(msg, 0)?;
+    pipe.recv(response, 0)?;
     Ok(())
 }
 

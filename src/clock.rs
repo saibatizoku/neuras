@@ -36,28 +36,16 @@
 //! // Return formatted RFC 3339 UTC date/time string.
 //! let time_str: String = clock.time_str().unwrap();
 //! ```
-pub mod errors {
-    //! Clock errors.
-    error_chain! {
-        errors {
-            SysClockBeforeEpoch {
-                description("clock time before UNIX EPOCH!")
-            }
-            ClockSystemDateTime {
-                description("clock datetime string failed")
-            }
-            ClockSystemTime {
-                description("clock system time failed")
-            }
-        }
-    }
-}
-
-use self::errors::*;
-
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-
+use std::time::{Duration, Instant, SystemTime, SystemTimeError, UNIX_EPOCH};
+use failure::Error;
 use chrono::{DateTime, NaiveDateTime, Utc};
+
+/// Clock errors.
+#[derive(Debug, Fail)]
+pub enum ClockError {
+    #[fail(display = "system time clock failed: {:?}", _0)]
+    SystemTime(#[cause] SystemTimeError),
+}
 
 // Convert `std::time::Duration` to microseconds.
 fn duration_to_micros(d: Duration) -> i64 {
@@ -76,10 +64,10 @@ fn duration_to_millis(d: Duration) -> i64 {
 }
 
 // Get the system time as the duration since UNIX EPOCH.
-fn get_system_time() -> Result<Duration> {
+fn get_system_time() -> Result<Duration, ClockError> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .chain_err(|| ErrorKind::SysClockBeforeEpoch)
+        .map_err(|e| ClockError::SystemTime(e))
 }
 
 /// A new `Clock` instance is created with the `std::time::Instant` it was started.
@@ -107,15 +95,15 @@ pub fn clock_usecs(clock: &Clock) -> i64 {
 }
 
 /// Returns monotonic clock in milliseconds.
-pub fn clock_time() -> Result<i64> {
-    let timestamp = get_system_time().chain_err(|| ErrorKind::ClockSystemTime)?;
+pub fn clock_time() -> Result<i64, Error> {
+    let timestamp = get_system_time()?;
     let s = duration_to_millis(timestamp);
     Ok(s)
 }
 
 /// Returns an RFC 3339 and ISO 8601 UTC date and time string.
-pub fn clock_time_str() -> Result<String> {
-    let timestamp = get_system_time().chain_err(|| ErrorKind::ClockSystemDateTime)?;
+pub fn clock_time_str() -> Result<String, Error> {
+    let timestamp = get_system_time()?;
     let ndt =
         NaiveDateTime::from_timestamp(timestamp.as_secs() as i64, timestamp.subsec_nanos() as u32);
     let dt = DateTime::<Utc>::from_utc(ndt, Utc);
@@ -151,12 +139,12 @@ impl Clock {
     }
 
     /// Returns monotonic clock in milliseconds.
-    pub fn time(&self) -> Result<i64> {
+    pub fn time(&self) -> Result<i64, Error> {
         clock_time()
     }
 
     /// Returns an RFC 3339 and ISO 8601 UTC date and time string.
-    pub fn time_str(&self) -> Result<String> {
+    pub fn time_str(&self) -> Result<String, Error> {
         clock_time_str()
     }
 }

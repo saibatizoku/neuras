@@ -1,6 +1,6 @@
 #![feature(unboxed_closures)]
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate futures;
 extern crate neuras;
 extern crate tokio_core;
@@ -11,114 +11,113 @@ use std::thread;
 use std::time::Duration;
 use std::io::Error as IoError;
 
+use failure::Error;
 use futures::{FlattenStream, Future, Stream};
 use futures::future::{err, ok};
 use futures::stream;
 use futures::stream::Take;
 use neuras::actor::Actorling;
-use neuras::actor::errors::*;
+use neuras::utils::run_named_thread;
 use tokio_core::reactor::{Core, Handle};
 
 const POLL_TIMEOUT: i64 = 100;
 
+type Result<T> = ::std::result::Result<T, Error>;
+
 fn run_pipe_thread(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.address();
     let context = actor.context();
-    let pipe_thread = actor
-        .run_thread("pipe", move || {
-            println!("enter: pipe thread");
-            let pipe = context.socket(zmq::PAIR)?;
-            pipe.bind(&addr)?;
-            let controller = context.socket(zmq::PUB)?;
-            controller.bind("inproc://controller")?;
-            let mut msg = zmq::Message::new();
-            let mut items = [pipe.as_poll_item(zmq::POLLIN | zmq::POLLOUT)];
-            loop {
-                zmq::poll(&mut items, POLL_TIMEOUT)?;
-                if items[0].is_readable() {
-                    eprintln!("pipe is readable");
-                    pipe.recv(&mut msg, 0)?;
-                    match msg.as_str() {
-                        Some(a) if a == "STOP" => {
-                            println!("broadcast: STOP");
-                            controller.send("STOP", 0)?;
-                            eprintln!("stop: pipe");
-                            break;
-                        }
-                        _ => {}
+    let pipe_thread = run_named_thread("pipe", move || {
+        println!("enter: pipe thread");
+        let pipe = context.socket(zmq::PAIR)?;
+        pipe.bind(&addr)?;
+        let controller = context.socket(zmq::PUB)?;
+        controller.bind("inproc://controller")?;
+        let mut msg = zmq::Message::new();
+        let mut items = [pipe.as_poll_item(zmq::POLLIN | zmq::POLLOUT)];
+        loop {
+            zmq::poll(&mut items, POLL_TIMEOUT)?;
+            if items[0].is_readable() {
+                eprintln!("pipe is readable");
+                pipe.recv(&mut msg, 0)?;
+                match msg.as_str() {
+                    Some(a) if a == "STOP" => {
+                        println!("broadcast: STOP");
+                        controller.send("STOP", 0)?;
+                        eprintln!("stop: pipe");
+                        break;
                     }
-                } else {
-                    eprintln!("pipe not readable");
+                    _ => {}
                 }
-                if items[0].is_writable() {
-                    eprintln!("pipe is writable");
-                } else {
-                    eprintln!("pipe not writable");
-                }
-                thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
+            } else {
+                eprintln!("pipe not readable");
             }
-            println!("exit: pipe thread");
-            Ok(())
-        })
-        .unwrap();
+            if items[0].is_writable() {
+                eprintln!("pipe is writable");
+            } else {
+                eprintln!("pipe not writable");
+            }
+            thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
+        }
+        println!("exit: pipe thread");
+        Ok(())
+    }).unwrap();
     Ok(pipe_thread)
 }
 
 fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.address();
     let context = actor.context();
-    let public_thread = actor
-        .run_thread("public", move || {
-            println!("enter: public thread");
-            let public = context.socket(zmq::REP)?;
-            public.bind(&addr)?;
-            let controller = context.socket(zmq::SUB)?;
-            controller.connect("inproc://controller")?;
-            controller.set_subscribe(b"")?;
-            let mut msg = zmq::Message::new();
-            let mut items = [
-                public.as_poll_item(zmq::POLLIN | zmq::POLLOUT),
-                controller.as_poll_item(zmq::POLLIN),
-            ];
-            loop {
-                zmq::poll(&mut items, POLL_TIMEOUT)?;
-                if items[1].is_readable() {
-                    controller.recv(&mut msg, 0)?;
-                    match msg.as_str() {
-                        Some(a) if a == "STOP" => {
-                            eprintln!("stop: public");
-                            public.disconnect(&addr)?;
-                            controller.set_unsubscribe(b"")?;
-                            controller.disconnect("inproc://controller")?;
-                            break;
-                        }
-                        _ => {}
+    let public_thread = run_named_thread("public", move || {
+        println!("enter: public thread");
+        let public = context.socket(zmq::REP)?;
+        public.bind(&addr)?;
+        let controller = context.socket(zmq::SUB)?;
+        controller.connect("inproc://controller")?;
+        controller.set_subscribe(b"")?;
+        let mut msg = zmq::Message::new();
+        let mut items = [
+            public.as_poll_item(zmq::POLLIN | zmq::POLLOUT),
+            controller.as_poll_item(zmq::POLLIN),
+        ];
+        loop {
+            zmq::poll(&mut items, POLL_TIMEOUT)?;
+            if items[1].is_readable() {
+                controller.recv(&mut msg, 0)?;
+                match msg.as_str() {
+                    Some(a) if a == "STOP" => {
+                        eprintln!("stop: public");
+                        public.disconnect(&addr)?;
+                        controller.set_unsubscribe(b"")?;
+                        controller.disconnect("inproc://controller")?;
+                        break;
                     }
-                } else {
-                    eprintln!("public controller not readable");
+                    _ => {}
                 }
-
-                if items[0].is_readable() {
-                    public.recv(&mut msg, 0)?;
-                    eprintln!("public is readable");
-                    if let Some(a) = msg.as_str() {
-                        println!("ECHO {}", a);
-                        public.send(a, 0)?;
-                    }
-                } else {
-                    eprintln!("public not readable");
-                }
-                if items[0].is_writable() {
-                    eprintln!("public is writable");
-                } else {
-                    eprintln!("public not writable");
-                }
-                thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
+            } else {
+                eprintln!("public controller not readable");
             }
-            println!("exit: public thread");
-            Ok(())
-        })
-        .unwrap();
+
+            if items[0].is_readable() {
+                public.recv(&mut msg, 0)?;
+                eprintln!("public is readable");
+                if let Some(a) = msg.as_str() {
+                    println!("ECHO {}", a);
+                    public.send(a, 0)?;
+                }
+            } else {
+                eprintln!("public not readable");
+            }
+            if items[0].is_writable() {
+                eprintln!("public is writable");
+            } else {
+                eprintln!("public not writable");
+            }
+            thread::sleep(Duration::from_millis(POLL_TIMEOUT as u64));
+        }
+        println!("exit: public thread");
+        Ok(())
+    }).unwrap();
     Ok(public_thread)
 }
 
@@ -152,19 +151,17 @@ fn control_pipe_stream(context: &zmq::Context) -> Result<()> {
 fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
     let addr = actor.address();
     let context = actor.context();
-    let public_thread = actor
-        .run_thread("play", move || {
-            println!("enter: play thread");
-            let public = context.socket(zmq::REQ).unwrap();
-            public.connect(&addr).unwrap();
+    let public_thread = run_named_thread("play", move || {
+        println!("enter: play thread");
+        let public = context.socket(zmq::REQ).unwrap();
+        public.connect(&addr).unwrap();
 
-            control_pipe_stream(&context).unwrap();
+        control_pipe_stream(&context).unwrap();
 
-            public.disconnect(&addr).unwrap();
-            println!("exit: play thread");
-            Ok(())
-        })
-        .unwrap();
+        public.disconnect(&addr).unwrap();
+        println!("exit: play thread");
+        Ok(())
+    }).unwrap();
 
     Ok(public_thread)
 }
@@ -240,7 +237,7 @@ fn cleanup_n_exit(threads: Vec<thread::JoinHandle<Result<()>>>) -> Result<()> {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("thread not joined {:?}", e);
-                bail!("thread not joined");
+                format_err!("thread not joined");
             }
         }
         println!("joined {:?} thread with parent", name);
