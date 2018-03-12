@@ -15,7 +15,6 @@
 //!
 //!
 
-
 use super::socket::{PollingSocket, SocketRecv, SocketWrapper};
 use super::utils::run_named_thread;
 
@@ -136,8 +135,7 @@ impl Actorling {
 
     /// Stop the current actorling instance.
     pub fn stop(&self) -> Result<(), zmq::Error> {
-        self.pipe()
-            .send("$STOP", 0)
+        self.pipe().send("$STOP", 0)
     }
 
     pub fn pop(&self) -> Result<Option<Vec<zmq::Message>>, Error> {
@@ -242,19 +240,14 @@ fn parse_pipe_command(msg: &[u8]) -> Result<PipeCommand, Error> {
 
 fn execute_command(pipe: &zmq::Socket, cmd: &PipeCommand) -> Result<(), ActorlingError> {
     match *cmd {
-        PipeCommand::Send(message) => pipe.send(message, 0).map_err(|e| {
-            ActorlingError::SocketSend(e)
-        })?,
+        PipeCommand::Send(message) => pipe.send(message, 0).map_err(ActorlingError::SocketSend)?,
         PipeCommand::Interrupt => {
-            pipe.send("$STOPPING", 0).map_err(|e| {
-                ActorlingError::SocketSend(e)
-            })?;
+            pipe.send("$STOPPING", 0)
+                .map_err(ActorlingError::SocketSend)?;
             return Err(ActorlingError::Interrupted);
         }
         PipeCommand::Invalid => {
-            pipe.send("$WONTDO", 0).map_err(|e| {
-                ActorlingError::SocketSend(e)
-            })?;
+            pipe.send("$WONTDO", 0).map_err(ActorlingError::SocketSend)?;
             return Err(ActorlingError::InvalidCommand);
         }
     }

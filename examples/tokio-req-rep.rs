@@ -8,10 +8,12 @@ use futures::Future;
 use tokio_core::reactor::Core;
 
 macro_rules! t {
-    ($e:expr) => (match $e {
-        Ok(e) => e,
-        Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
-    })
+    ($e: expr) => {
+        match $e {
+            Ok(e) => e,
+            Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
+        }
+    };
 }
 
 const SOCKET_ADDRESS: &str = "tcp://127.0.0.1:5657";
