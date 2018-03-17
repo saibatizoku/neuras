@@ -7,8 +7,6 @@
 //! by using tokio's reactor and tools.
 #![recursion_limit = "1024"]
 
-#[macro_use]
-extern crate bitflags;
 extern crate chrono;
 #[macro_use]
 extern crate failure;
@@ -32,8 +30,6 @@ extern crate tokio_signal;
 pub mod actor;
 // Millisecond clocks and delays.
 pub mod clock;
-// Library initialization scheme.
-mod initialize;
 // Messages for sockets.
 mod message;
 // Polling for sockets.

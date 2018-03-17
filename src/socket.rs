@@ -3,8 +3,6 @@
 //! A high-level socket API that hides regular `zmq::Context` and `zmq::Socket`.
 //!
 //! Inspired by [zsock](http://czmq.zeromq.org/czmq4-0:zsock).
-use super::initialize::sys_context;
-
 use std::io;
 use std::result;
 use zmq;
@@ -95,7 +93,7 @@ pub trait SocketRecv: SocketWrapper {
 /// API declaration for the standard socket.
 impl SocketWrapper for zmq::Socket {
     fn get_socket_ref(&self) -> &zmq::Socket {
-        &self
+        self
     }
 
     fn get_rcvmore(&self) -> io::Result<bool> {
