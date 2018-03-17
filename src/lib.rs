@@ -47,4 +47,3 @@ pub mod utils;
 
 // Convenient API type for dealing with clocks and delays.
 pub use clock::Clock;
-pub use socket::Socket;
