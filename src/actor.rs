@@ -161,16 +161,6 @@ impl Actorling {
     }
 }
 
-pub fn run_poll_zmq(items: &[(&zmq::Socket, zmq::PollEvents)]) -> Result<(), Error> {
-    let mut pollable = vec![];
-    let mut sockets = vec![];
-    for &(socket, events) in items {
-        pollable.push(socket.as_poll_item(events));
-        sockets.push(socket);
-    }
-    Ok(())
-}
-
 pub fn poll_zmq_actor(
     pipe: zmq::Socket,
     service: zmq::Socket,
