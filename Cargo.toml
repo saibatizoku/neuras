@@ -15,7 +15,7 @@ serde_derive = "1.0"
 slab = "0.4"
 toml = "0.4"
 uuid = { version = "0.5", features = ["serde", "v4", "v5"] }
-url = "1.5.1"
+url = "1.7"
 
 # io deps
 mio = "0.6"
