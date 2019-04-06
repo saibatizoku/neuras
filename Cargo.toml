@@ -4,7 +4,7 @@ version = "0.1.2"
 authors = ["Joaquín R <globojorro@gmail.com>"]
 
 [features]
-default = []
+default = ["async-tokio"]
 async-tokio = ["futures", "tokio-core", "tokio-signal"]
 
 [dependencies]
