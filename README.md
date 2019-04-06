@@ -19,7 +19,7 @@ ZeroMQ provides a layer of abstraction over common patterns found in network pro
 ## Dependencies
 
 - [ØMQ](http://zeromq.org). Using version >= 4.0.0
-- [rust-zmq](https://github.com/erickt/rust-zmq). Using master branch on git.
+- [rust-zmq](https://github.com/erickt/rust-zmq). Using version "0.9".
 
 ## Installation
 
@@ -29,6 +29,8 @@ Add this to your `Cargo.toml`, under `[dependencies]`:
 
 **`default`**
 The `default` feature uses the standard `zmq::Socket`. Use this if you have existing `zmq` code, or if you want to use sockets in blocking mode.
+
+Also, the optional feature `async-tokio` is a default feature.
 
 ```
 [dependencies]
