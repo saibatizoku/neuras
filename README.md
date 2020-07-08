@@ -1,6 +1,8 @@
 neuras - A high-level API for networking with ØMQ in Rust
 =========================================================
 
+[![Build Status](https://travis-ci.org/saibatizoku/neuras.svg?branch=master)](https://travis-ci.org/saibatizoku/neuras)
+
 ## About
 
 An attempt at having a [Rust](http://rust-lang.org) high-level API on top of [ØMQ](http://zeromq.org) (aka. _ZeroMQ_, _zmq_),
