@@ -1,4 +1,3 @@
-#![feature(unboxed_closures)]
 #[macro_use]
 extern crate failure;
 extern crate futures;
@@ -161,13 +160,14 @@ fn run_playful(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
         public.disconnect(&addr).unwrap();
         println!("exit: play thread");
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
 
     Ok(public_thread)
 }
 
 type FutureStream =
-    Future<Item = Box<Stream<Error = IoError, Item = ()> + Send>, Error = IoError> + Send;
+    dyn Future<Item = Box<dyn Stream<Error = IoError, Item = ()> + Send>, Error = IoError> + Send;
 
 type SignalInterruption = Take<FlattenStream<Box<FutureStream>>>;
 
