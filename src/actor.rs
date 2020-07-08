@@ -157,7 +157,7 @@ impl Actorling {
 
     /// Returns the actorling's UUID as a `String`
     pub fn uuid(&self) -> String {
-        self.uuid.simple().to_string()
+        self.uuid.to_simple().to_string()
     }
 }
 
