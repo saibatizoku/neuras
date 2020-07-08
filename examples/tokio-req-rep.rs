@@ -3,8 +3,8 @@ extern crate neuras;
 extern crate tokio_core;
 extern crate zmq;
 
-use neuras::socket::tokio::TokioSocket;
 use futures::Future;
+use neuras::socket::tokio::TokioSocket;
 use tokio_core::reactor::Core;
 
 macro_rules! t {

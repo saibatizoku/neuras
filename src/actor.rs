@@ -18,10 +18,10 @@
 use super::socket::{PollingSocket, SocketRecv, SocketWrapper};
 use super::utils::run_named_thread;
 
-use std::io;
-use std::collections::VecDeque;
-use std::thread;
 use failure::Error;
+use std::collections::VecDeque;
+use std::io;
+use std::thread;
 use uuid::Uuid;
 use zmq;
 
@@ -237,7 +237,8 @@ fn execute_command(pipe: &zmq::Socket, cmd: &PipeCommand) -> Result<(), Actorlin
             return Err(ActorlingError::Interrupted);
         }
         PipeCommand::Invalid => {
-            pipe.send("$WONTDO", 0).map_err(ActorlingError::SocketSend)?;
+            pipe.send("$WONTDO", 0)
+                .map_err(ActorlingError::SocketSend)?;
             return Err(ActorlingError::InvalidCommand);
         }
     }

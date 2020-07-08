@@ -1,20 +1,20 @@
 //! `tokio`-compatibility for sockets.
 #[path = "socket_tokio_future.rs"]
 pub mod future;
-#[path = "socket_tokio_stream.rs"]
-pub mod stream;
 #[path = "socket_tokio_sink.rs"]
 pub mod sink;
+#[path = "socket_tokio_stream.rs"]
+pub mod stream;
 
-use self::future::{SendMessage, SendMultipartMessage};
 use self::future::{RecvMessage, RecvMultipartMessage};
-use self::stream::{MessageMultipartStream, MessageStream};
+use self::future::{SendMessage, SendMultipartMessage};
 use self::sink::{MessageMultipartSink, MessageSink};
-use super::{SocketRecv, SocketSend, SocketWrapper};
+use self::stream::{MessageMultipartStream, MessageStream};
 use super::PollingSocket;
+use super::{SocketRecv, SocketSend, SocketWrapper};
 
-use std::io;
 use futures::Async;
+use std::io;
 use tokio_core::reactor::{Handle, PollEvented};
 use zmq::{Message, Sendable, Socket};
 

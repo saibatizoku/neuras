@@ -2,9 +2,9 @@
 use super::super::{SocketRecv, SocketSend};
 use super::TokioSocket;
 
+use futures::{Async, Future, Poll};
 use std::io;
 use std::ops::Deref;
-use futures::{Async, Future, Poll};
 use zmq::Message;
 
 /// A Future that sends a `Message`.

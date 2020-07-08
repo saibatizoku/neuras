@@ -2,10 +2,10 @@ extern crate mio;
 extern crate neuras;
 extern crate zmq;
 
-use std::io;
 use mio::{Evented, Poll, PollOpt, Ready, Token};
-use neuras::socket::PollingSocket;
 use neuras::poller::Poller;
+use neuras::socket::PollingSocket;
+use std::io;
 
 struct ResponderActor {
     inner: PollingSocket,

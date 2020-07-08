@@ -167,5 +167,4 @@ impl SocketRecv for zmq::Socket {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

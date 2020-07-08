@@ -6,15 +6,15 @@ extern crate tokio_core;
 extern crate tokio_signal;
 extern crate zmq;
 
+use std::io::Error as IoError;
 use std::thread;
 use std::time::Duration;
-use std::io::Error as IoError;
 
 use failure::Error;
-use futures::{FlattenStream, Future, Stream};
 use futures::future::{err, ok};
 use futures::stream;
 use futures::stream::Take;
+use futures::{FlattenStream, Future, Stream};
 use neuras::actor::Actorling;
 use neuras::utils::run_named_thread;
 use tokio_core::reactor::{Core, Handle};
@@ -60,7 +60,8 @@ fn run_pipe_thread(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> 
         }
         println!("exit: pipe thread");
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     Ok(pipe_thread)
 }
 
@@ -116,7 +117,8 @@ fn run_public(actor: &Actorling) -> Result<thread::JoinHandle<Result<()>>> {
         }
         println!("exit: public thread");
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     Ok(public_thread)
 }
 
@@ -139,7 +141,8 @@ fn control_pipe_stream(context: &zmq::Context) -> Result<()> {
             None => err::<(String, zmq::Socket), ()>(()),
         };
         Some(fut)
-    }).for_each(|msg| {
+    })
+    .for_each(|msg| {
         println!("msg: {:?}", msg);
         Ok(())
     });

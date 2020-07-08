@@ -15,9 +15,9 @@ use super::{SocketRecv, SocketSend, SocketWrapper};
 use std::io;
 use std::os::unix::io::RawFd;
 
+use mio_lib::unix::EventedFd;
 use mio_lib::Evented;
 use mio_lib::{Poll, PollOpt, Ready, Token};
-use mio_lib::unix::EventedFd;
 use zmq::{Message, Sendable, Socket, DONTWAIT};
 
 /// Socket used for polling with `mio::Poll`.

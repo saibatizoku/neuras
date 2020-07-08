@@ -36,9 +36,9 @@
 //! // Return formatted RFC 3339 UTC date/time string.
 //! let time_str: String = clock.time_str().unwrap();
 //! ```
-use std::time::{Duration, Instant, SystemTime, SystemTimeError, UNIX_EPOCH};
-use failure::Error;
 use chrono::{DateTime, NaiveDateTime, Utc};
+use failure::Error;
+use std::time::{Duration, Instant, SystemTime, SystemTimeError, UNIX_EPOCH};
 
 /// Clock errors.
 #[derive(Debug, Fail)]
