@@ -1,9 +1,12 @@
-## [Unreleased]
+## [0.1.3] - 2020-03-07
 ### Added
+- Travis CI with zmq support.
 - Polling mechanism for multiple sockets using `mio`.
 
 ### Changed
-- `mio` crate is no longer optional
+- `mio` crate is no longer optional.
+- Removed nightly feature and bare trait objects in examples/actorling.rs.
+- rustfmt
 
 ## [0.1.2] - 2018-02-08
 ### Added
