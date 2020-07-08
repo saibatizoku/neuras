@@ -1,4 +1,5 @@
 language: rust
+sudo: false
 rust:
     - stable
     - beta
@@ -7,10 +8,52 @@ matrix:
     allow_failures:
         - rust: nightly
     fast_finish: true
+addons:
+  apt:
+    packages:
+    - libcurl4-openssl-dev
+    - libelf-dev
+    - libdw-dev
+    - make
+    - automake
+    - gcc
+    - build-essential
+    - g++
+    - cpp
+    - libc6-dev
+    - man-db
+    - autoconf
+    - pkg-config
+    - libtool
+    - git
+before_script:
+- |
+  set -e
+  pip install 'travis-cargo<0.2' --user
+  git clone --depth 1 -b stable https://github.com/jedisct1/libsodium.git
+  cd libsodium
+  ./autogen.sh
+  ./configure --prefix=$HOME
+  make
+  make install
+  cd ..
+  wget https://github.com/zeromq/zeromq4-1/archive/v4.1.7.tar.gz
+  tar zxf v4.1.7.tar.gz
+  cd zeromq4-1-4.1.7
+  ./autogen.sh
+  ./configure --prefix=$HOME --with-libsodium
+  make
+  make install
+  cd ..
+
 
 cache: cargo
-
 script:
-    - cargo build --verbose --all
-    - cargo test --verbose --all --no-default-features 
-    - cargo test --verbose --all --no-default-features --features async-tokio
+- |
+    travis-cargo build -- --all && travis-cargo test -- --all
+env:
+  global:
+  - PATH=$HOME/.local/bin:$PATH
+  - LD_LIBRARY_PATH=$HOME/lib
+  - PKG_CONFIG_PATH=$HOME/lib/pkgconfig
+  - TRAVIS_CARGO_NIGHTLY_FEATURE=""
