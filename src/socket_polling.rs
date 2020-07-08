@@ -132,7 +132,7 @@ impl Evented for PollingSocket {
         interest: Ready,
         opts: PollOpt,
     ) -> io::Result<()> {
-        let fd = try!(self.as_fd());
+        let fd = self.as_fd()?;
         EventedFd(&fd).register(poll, token, interest, opts)
     }
 
@@ -143,12 +143,12 @@ impl Evented for PollingSocket {
         interest: Ready,
         opts: PollOpt,
     ) -> io::Result<()> {
-        let fd = try!(self.as_fd());
+        let fd = self.as_fd()?;
         EventedFd(&fd).reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        let fd = try!(self.as_fd());
+        let fd = self.as_fd()?;
         EventedFd(&fd).deregister(poll)
     }
 }
