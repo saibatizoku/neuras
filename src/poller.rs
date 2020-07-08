@@ -1,12 +1,7 @@
 //! Polling for evented actor types.
-use super::socket::{PollingSocket, SocketRecv};
-
-use failure::Error;
 use mio_lib::event::Evented;
-use mio_lib::{Events, Poll, Token};
+use mio_lib::Poll;
 use slab::Slab;
-use std::io;
-use std::time::Duration;
 use zmq;
 
 /// Polling instance for evented actors.
