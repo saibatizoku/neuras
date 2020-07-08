@@ -13,7 +13,7 @@ use zmq;
 pub struct Poller {
     context: zmq::Context,
     pub poll: Poll,
-    pub actors: Slab<Box<Evented>>,
+    pub actors: Slab<Box<dyn Evented>>,
 }
 
 impl Poller {
