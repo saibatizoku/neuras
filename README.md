@@ -7,7 +7,7 @@ neuras - A high-level API for networking with ØMQ in Rust
 
 An attempt at having a [Rust](http://rust-lang.org) high-level API on top of [ØMQ](http://zeromq.org) (aka. _ZeroMQ_, _zmq_),
 as suggested by
-"[Features of a Higher-Level API](http://zguide.zeromq.org/page:all#toc74)",
+"[Features of a Higher-Level API](https://zguide.zeromq.org/docs/chapter3/#Features-of-a-Higher-Level-API)",
 by using tokio's reactor and tools.
 
 This library uses [rust-zmq](https://github.com/erickt/rust-zmq)'s bindings under the hood.
